@@ -4,6 +4,7 @@ plugins {
     java
     id("org.springframework.boot") version "4.1.1"
     id("io.spring.dependency-management") version "1.1.7"
+    id("com.diffplug.spotless") version "7.2.1"
 }
 
 group = "dev.straka"
@@ -30,6 +31,8 @@ dependencies {
     runtimeOnly("org.postgresql:postgresql")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    // The Boot BOM does not manage Testcontainers; its own BOM does.
+    testImplementation(platform("org.testcontainers:testcontainers-bom:1.21.3"))
     testImplementation("org.testcontainers:testcontainers")
     testImplementation("org.testcontainers:postgresql")
     testImplementation("org.testcontainers:junit-jupiter")
@@ -38,6 +41,20 @@ dependencies {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+}
+
+// One formatter (PORT.md section 9): google-java-format via Spotless.
+// Pinned: Spotless's default GJF calls a javac internal removed in JDK 25
+// (NoSuchMethodError on DeferredDiagnosticHandler); 1.28.0 works on JDK 17-25.
+spotless {
+    java {
+        googleJavaFormat("1.28.0")
+    }
+}
+
+// Useful compiler linting without overlapping style systems.
+tasks.withType<JavaCompile> {
+    options.compilerArgs.addAll(listOf("-Xlint:all"))
 }
 
 // Separate source set for Testcontainers suites: real Postgres, never H2.
