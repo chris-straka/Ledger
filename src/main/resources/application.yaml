@@ -1,0 +1,18 @@
+spring:
+  application:
+    name: ledger
+  datasource:
+    url: ${LEDGER_JDBC_URL:jdbc:postgresql://127.0.0.1:5432/ledger}
+    username: ${LEDGER_DB_USER:ledger_app}
+    password: ${LEDGER_DB_PASSWORD:ledger_app_dev_only}
+    hikari:
+      maximum-pool-size: 10
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized

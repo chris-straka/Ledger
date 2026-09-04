@@ -1,0 +1,42 @@
+# Java / Gradle build output
+build/
+.gradle/
+out/
+
+# Gradle wrapper jar is COMMITTED on purpose (reproducible build without mise).
+# Uncomment the next line only if you deliberately want wrapper-less builds.
+# gradle/wrapper/gradle-wrapper.jar
+
+# Compiled class files
+*.class
+
+# Jar / war / ear
+*.jar
+*.war
+*.ear
+
+# Test / coverage reports
+TestResults/
+
+# Logs
+*.log
+crash.log
+crash.*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor / IDE
+.idea/
+*.iml
+.vscode/
+*.lscache
+
+# Environment variables (user-owned local state, never committed)
+.env
+.env.*
+!.env.example
+
+# Local secrets/config
+secrets.json

@@ -1,0 +1,13 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "ledger (local Compose)",
+      "Group": "Servers",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "postgres",
+      "Username": "ledger_owner",
+      "SSLMode": "prefer"
+    }
+  }
+}
