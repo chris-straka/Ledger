@@ -16,6 +16,7 @@ import dev.straka.ledger.posting.domain.PostingKind;
 import dev.straka.ledger.posting.domain.PostingLine;
 import dev.straka.ledger.posting.persistence.PostingRepository;
 import dev.straka.ledger.support.crash.CrashGate;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.math.BigInteger;
 import java.sql.SQLException;
 import java.time.Clock;
@@ -60,6 +61,7 @@ public class PostingService {
   private final AccountRepository accounts;
   private final AttemptRecorder attempts;
   private final CrashGate crash;
+  private final MeterRegistry meters;
   private final TransactionTemplate serializable;
   private final Clock clock;
   private final Sleeper sleeper;
@@ -69,6 +71,7 @@ public class PostingService {
       AccountRepository accounts,
       AttemptRecorder attempts,
       CrashGate crash,
+      MeterRegistry meters,
       PlatformTransactionManager transactions,
       Clock clock,
       Sleeper sleeper) {
@@ -76,6 +79,7 @@ public class PostingService {
     this.accounts = accounts;
     this.attempts = attempts;
     this.crash = crash;
+    this.meters = meters;
     this.clock = clock;
     this.sleeper = sleeper;
     this.serializable = new TransactionTemplate(transactions);
@@ -97,18 +101,37 @@ public class PostingService {
         PostingFingerprint.v1Standard(cleanDescription, cleanEffective, lines);
 
     try {
-      PostingOutcome outcome =
-          runSerializable(
-              () ->
-                  attemptPost(
-                      idempotencyKey, fingerprint, cleanDescription, cleanEffective, lines));
+      PostingOutcome outcome;
+      try {
+        outcome =
+            runSerializable(
+                () ->
+                    attemptPost(
+                        idempotencyKey, fingerprint, cleanDescription, cleanEffective, lines),
+                "standard");
+      } catch (DuplicateKeyException e) {
+        // The unique key — not a check-then-insert race — chose the winner. Our whole
+        // attempt rolled back; read the winner outside it and compare fingerprints.
+        outcome = resolveIdempotencyRace(idempotencyKey, fingerprint);
+      }
+      // Counted only after the template returned, i.e. after commit: an insert
+      // followed by a deferred-trigger failure was an attempt, not a posting.
+      count(outcome, "standard");
       // Committed, response not yet written: the second crash window.
       crash.awaitAfterCommit();
       return outcome;
-    } catch (DuplicateKeyException e) {
-      // The unique key — not a check-then-insert race — chose the winner. Our whole
-      // attempt rolled back; read the winner outside it and compare fingerprints.
-      return resolveIdempotencyRace(idempotencyKey, fingerprint);
+    } catch (InvalidPostingException e) {
+      count("validation", "standard");
+      throw e;
+    } catch (OverdraftRejectedException e) {
+      count("overdraft", "standard");
+      throw e;
+    } catch (IdempotencyConflictException | ReversalConflictException e) {
+      count("conflict", "standard");
+      throw e;
+    } catch (PostingRetryExhaustedException e) {
+      count("failed", "standard");
+      throw e;
     }
   }
 
@@ -125,23 +148,57 @@ public class PostingService {
     PostingFingerprint fingerprint =
         PostingFingerprint.v1Reversal(targetId, cleanReason, cleanEffective);
     try {
-      PostingOutcome outcome =
-          runSerializable(
-              () ->
-                  attemptReversal(
-                      idempotencyKey, fingerprint, targetId, cleanReason, cleanEffective));
+      PostingOutcome outcome;
+      try {
+        outcome =
+            runSerializable(
+                () ->
+                    attemptReversal(
+                        idempotencyKey, fingerprint, targetId, cleanReason, cleanEffective),
+                "reversal");
+      } catch (DuplicateKeyException e) {
+        outcome = resolveReversalRace(idempotencyKey, fingerprint);
+      }
+      count(outcome, "reversal");
       crash.awaitAfterCommit();
       return outcome;
-    } catch (DuplicateKeyException e) {
-      return resolveReversalRace(idempotencyKey, fingerprint);
+    } catch (InvalidPostingException e) {
+      count("validation", "reversal");
+      throw e;
+    } catch (OverdraftRejectedException e) {
+      count("overdraft", "reversal");
+      throw e;
+    } catch (IdempotencyConflictException | ReversalConflictException e) {
+      count("conflict", "reversal");
+      throw e;
+    } catch (PostingRetryExhaustedException e) {
+      count("failed", "reversal");
+      throw e;
     }
   }
 
-  private <T> T runSerializable(java.util.function.Supplier<T> work) {
+  private void count(PostingOutcome outcome, String kind) {
+    String result =
+        switch (outcome) {
+          case PostingOutcome.Created created -> "created";
+          case PostingOutcome.Replayed replayed -> "replayed";
+        };
+    count(result, kind);
+  }
+
+  private void count(String outcome, String kind) {
+    // Low-cardinality labels only: kind is bounded to two values, outcome to six.
+    // Never account IDs, keys, descriptions, amounts, or exception text.
+    meters.counter("ledger.postings", "kind", kind, "outcome", outcome).increment();
+  }
+
+  private <T> T runSerializable(java.util.function.Supplier<T> work, String kind) {
     for (int attempt = 1; ; attempt++) {
       try {
         attempts.attemptStarted();
-        return serializable.execute(status -> work.get());
+        return meters
+            .timer("ledger.posting.commit", "kind", kind)
+            .record(() -> serializable.execute(status -> work.get()));
       } catch (DuplicateKeyException e) {
         // Key semantics belong to the caller (replay vs. already-reversed); the
         // rolled-back attempt carries no other verdict.

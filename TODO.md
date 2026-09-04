@@ -69,9 +69,17 @@ backlog, not a history of completed work.
 - `make crash-test` passes: 0 rows after kill-before-commit with reusable
   key, exact-once replay after kill-after-commit, conservation zero.
 
-## Phase 8 — Observability, CI, interview demo
+## Phase 8 — Observability, CI, interview demo (done)
 
-- Rebuilt Grafana stack, Java CI workflows, `make demo`, README/DESIGN/INTERVIEW from evidence.
+- Micrometer outcomes/retries/latency with live Prometheus scrape + one
+  Grafana dashboard under `--profile observability` (defaults uncalibrated).
+- CI: wrapper validation, spotless/test/integrationTest/build, compose
+  config, script syntax, isolated crash job.
+- `make demo` passes 11 asserted steps; `make verify` audits the dev DB.
+- README/DESIGN.md/INTERVIEW.md written from passing evidence; stale
+  telemetry docs removed with one uuidv7-index note preserved.
+- `tilt ci` builds and boots the stack but reports teardown SIGTERM (143)
+  as failure; `tilt up` remains the dev loop, unproven headless.
 
 ## Source material (un-audited)
 

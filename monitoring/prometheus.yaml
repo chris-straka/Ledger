@@ -1,0 +1,11 @@
+# Ledger-local Prometheus. Scrapes only the ledger API; integrity audit stays
+# an explicit command (make verify), never a scrape target.
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: ledger
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["ledger-api:8080"]

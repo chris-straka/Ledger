@@ -73,6 +73,32 @@ services:
       retries: 5
       start_period: 30s
 
+  # Optional local observability: `docker compose --profile observability up`.
+  # Prometheus scrapes the ledger API; Grafana provisions one dashboard.
+  # Thresholds are engineering defaults until a load test calibrates them.
+  prometheus:
+    image: prom/prometheus:v3.3.0
+    profiles: ["observability"]
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yaml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      ledger-api:
+        condition: service_started
+
+  grafana:
+    image: grafana/grafana:12.0.0
+    profiles: ["observability"]
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ledger-grafana:/var/lib/grafana
+    depends_on:
+      - prometheus
+
   # Optional operator tooling: `docker compose --profile tools up pgadmin`
   pgadmin:
     image: dpage/pgadmin4:9
@@ -95,3 +121,4 @@ volumes:
   # `make clean` removes them explicitly; nothing else does.
   ledger-postgres:
   ledger-pgadmin:
+  ledger-grafana:
