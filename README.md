@@ -30,6 +30,7 @@ make upd        # build, migrate (owner), start app (runtime role)
 make demo       # isolated 11-step walkthrough; asserts every claim above
 make verify     # non-empty closure + conservation audit of the dev database
 make crash-test # isolated SIGKILL harness
+make backup     # pg_dump to backups/ (gitignored); DUMP=... make restore replays + audits
 make test integration-test
 ```
 

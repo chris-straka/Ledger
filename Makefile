@@ -5,7 +5,7 @@ help:
 		| awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-22s\033[0m %s\n", $$1, $$2}'
 
 # .PHONY tells Make these are cmd names, not files on the hard drive.
-.PHONY: help dev jar up upd down clean format check test integration-test crash-test verify demo logs
+.PHONY: help dev jar up upd down clean format check test integration-test crash-test verify demo logs backup restore
 
 jar: ## build the application jar (Gradle is incremental; safe to re-run)
 	./gradlew build
@@ -42,6 +42,14 @@ crash-test: ## isolated SIGKILL harness (own Compose project and volumes)
 
 verify: ## non-empty integrity audit (posting closure + per-currency conservation)
 	./scripts/verify.sh
+
+backup: ## pg_dump of the dev database (lands in backups/, gitignored; compose stack must be up)
+	chmod +x scripts/*.sh
+	./scripts/backup.sh
+
+restore: ## restore a backup into a disposable DB and audit it (DUMP=backups/ledger-<stamp>.dump)
+	chmod +x scripts/*.sh
+	./scripts/restore.sh "$(DUMP)"
 
 demo: ## reproducible interviewer walkthrough
 	./scripts/demo.sh

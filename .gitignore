@@ -47,3 +47,6 @@ Thumbs.db
 
 # Local secrets/config
 secrets.json
+
+# Local database backups (dumps land here; never committed)
+backups/
