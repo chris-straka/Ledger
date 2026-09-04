@@ -3,6 +3,11 @@ package dev.straka.ledger.support.error;
 import dev.straka.ledger.account.application.AccountConflictException;
 import dev.straka.ledger.account.application.AccountNotFoundException;
 import dev.straka.ledger.account.domain.InvalidAccountException;
+import dev.straka.ledger.posting.application.IdempotencyConflictException;
+import dev.straka.ledger.posting.application.OverdraftRejectedException;
+import dev.straka.ledger.posting.application.PostingNotFoundException;
+import dev.straka.ledger.posting.application.PostingRetryExhaustedException;
+import dev.straka.ledger.posting.domain.InvalidIdempotencyKeyException;
 import dev.straka.ledger.posting.domain.InvalidPostingException;
 import java.net.URI;
 import java.util.UUID;
@@ -54,6 +59,41 @@ public class ProblemAdvice {
   @ExceptionHandler(AccountConflictException.class)
   public ProblemDetail conflict(AccountConflictException e) {
     return problem(HttpStatus.CONFLICT, "ACCOUNT_CONFLICT", e.getMessage(), e);
+  }
+
+  @ExceptionHandler(InvalidIdempotencyKeyException.class)
+  public ProblemDetail badKey(InvalidIdempotencyKeyException e) {
+    return problem(HttpStatus.BAD_REQUEST, "MALFORMED_REQUEST", e.getMessage(), e);
+  }
+
+  @ExceptionHandler(PostingNotFoundException.class)
+  public ProblemDetail postingNotFound(PostingNotFoundException e) {
+    return problem(HttpStatus.NOT_FOUND, "POSTING_NOT_FOUND", e.getMessage(), e);
+  }
+
+  @ExceptionHandler(OverdraftRejectedException.class)
+  public ProblemDetail overdraft(OverdraftRejectedException e) {
+    return problem(HttpStatus.CONFLICT, "OVERDRAFT_REJECTED", e.getMessage(), e);
+  }
+
+  @ExceptionHandler(IdempotencyConflictException.class)
+  public ProblemDetail keyConflict(IdempotencyConflictException e) {
+    return problem(HttpStatus.CONFLICT, "IDEMPOTENCY_CONFLICT", e.getMessage(), e);
+  }
+
+  @ExceptionHandler(PostingRetryExhaustedException.class)
+  public org.springframework.http.ResponseEntity<ProblemDetail> exhausted(
+      PostingRetryExhaustedException e) {
+    ProblemDetail body =
+        problem(HttpStatus.SERVICE_UNAVAILABLE, "RETRY_EXHAUSTED", e.getMessage(), e);
+    return org.springframework.http.ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+        .header("Retry-After", "1")
+        .body(body);
+  }
+
+  @ExceptionHandler(org.springframework.web.bind.MissingRequestHeaderException.class)
+  public ProblemDetail missingHeader(org.springframework.web.bind.MissingRequestHeaderException e) {
+    return problem(HttpStatus.BAD_REQUEST, "MALFORMED_REQUEST", "Idempotency-Key is required", e);
   }
 
   private static ProblemDetail problem(HttpStatus status, String code, String detail, Exception e) {

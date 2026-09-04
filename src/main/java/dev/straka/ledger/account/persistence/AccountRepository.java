@@ -68,6 +68,11 @@ public class AccountRepository {
   }
 
   /** Current normal-side balance, derived from entries in one statement. Empty when missing. */
+  /** Current normal-side balance for the overdraft projection, in the caller's transaction. */
+  public Optional<BigInteger> balanceMinorOf(AccountId id) {
+    return balanceOf(id).map(AccountBalance::balanceMinor);
+  }
+
   public Optional<AccountBalance> balanceOf(AccountId id) {
     return jdbc.sql(
             "SELECT account_id, currency_code, balance_minor FROM v_account_balance WHERE account_id = :id")

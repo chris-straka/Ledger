@@ -36,6 +36,16 @@ backlog, not a history of completed work.
 
 - Fingerprinting, serializable transactions, replay/conflict semantics.
 
+## Phase 4 — Atomic posting and reads (done)
+
+- SHA-256 semantic fingerprints; unique key arbitrates races, never
+  check-then-insert; replay returns 200 + flag, mismatch is 409.
+- Fresh SERIALIZABLE transaction per attempt, retry loop outside the
+  template, full-jitter backoff, 503 after five attempts.
+- Deferred-trigger rejections translate to 409/422, never 500.
+- 23 unit + 58 integration tests green (incl. 20-way replay race);
+  live worked example matches PORT.md to the minor unit.
+
 ## Phase 5 — Overdraft and concurrency proof
 
 - Whole-transaction retry, N-thread tests, weaker-isolation anomaly demonstration.
