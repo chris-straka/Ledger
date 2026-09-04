@@ -49,7 +49,7 @@ sourceSets {
     }
 }
 
-val integrationTest by tasks.registering(Test::class) {
+val integrationTest = tasks.register<Test>("integrationTest") {
     description = "Runs integration tests against Testcontainers PostgreSQL."
     group = "verification"
     testClassesDirs = sourceSets["integrationTest"].output.classesDirs

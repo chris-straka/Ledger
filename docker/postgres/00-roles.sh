@@ -5,6 +5,10 @@
 # connect with least privilege.
 set -eu
 
+# The entrypoint does not guarantee these are exported into init scripts;
+# fall back to its own defaults rather than dying under `set -u`.
+: "${POSTGRES_USER:=postgres}"
+: "${POSTGRES_DB:=$POSTGRES_USER}"
 : "${LEDGER_APP:?LEDGER_APP is required}"
 : "${LEDGER_APP_PASSWORD:?LEDGER_APP_PASSWORD is required}"
 
