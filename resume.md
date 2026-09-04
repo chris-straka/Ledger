@@ -181,4 +181,4 @@ projects:
         text: "Implemented exact reversals as new server-generated inverse postings (double-reversal and reversal-of-reversal refused), with overdraft policy still applied."
       - id: ledger-crash
         track: swe
-        text: "TODO: Proved crash atomicity with an isolated SIGKILL harness: kill before commit leaves nothing, kill after commit replays to the original, and per-currency conservation audits zero."
+        text: "Proved crash atomicity with an isolated SIGKILL harness: kill before commit leaves nothing, kill after commit replays to the original, and per-currency conservation audits zero."

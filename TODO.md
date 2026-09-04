@@ -62,7 +62,12 @@ backlog, not a history of completed work.
   by kind, fraud fails at commit, spent history can refuse via overdraft.
 - 7 reversal tests green (API + raw JDBC); resume claims promoted to proven.
 
-## Phase 7 — Crash/ambiguous-response harness
+## Phase 7 — Crash/ambiguous-response harness (done)
+
+- Profile-gated pause points (no-ops in production); isolated Compose
+  project, ports, and volumes; SIGKILL at both windows; replay recovery.
+- `make crash-test` passes: 0 rows after kill-before-commit with reusable
+  key, exact-once replay after kill-after-commit, conservation zero.
 
 ## Phase 8 — Observability, CI, interview demo
 

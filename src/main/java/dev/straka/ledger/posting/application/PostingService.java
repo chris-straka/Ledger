@@ -15,6 +15,7 @@ import dev.straka.ledger.posting.domain.PostingFingerprint;
 import dev.straka.ledger.posting.domain.PostingKind;
 import dev.straka.ledger.posting.domain.PostingLine;
 import dev.straka.ledger.posting.persistence.PostingRepository;
+import dev.straka.ledger.support.crash.CrashGate;
 import java.math.BigInteger;
 import java.sql.SQLException;
 import java.time.Clock;
@@ -58,6 +59,7 @@ public class PostingService {
   private final PostingRepository postings;
   private final AccountRepository accounts;
   private final AttemptRecorder attempts;
+  private final CrashGate crash;
   private final TransactionTemplate serializable;
   private final Clock clock;
   private final Sleeper sleeper;
@@ -66,12 +68,14 @@ public class PostingService {
       PostingRepository postings,
       AccountRepository accounts,
       AttemptRecorder attempts,
+      CrashGate crash,
       PlatformTransactionManager transactions,
       Clock clock,
       Sleeper sleeper) {
     this.postings = postings;
     this.accounts = accounts;
     this.attempts = attempts;
+    this.crash = crash;
     this.clock = clock;
     this.sleeper = sleeper;
     this.serializable = new TransactionTemplate(transactions);
@@ -93,8 +97,14 @@ public class PostingService {
         PostingFingerprint.v1Standard(cleanDescription, cleanEffective, lines);
 
     try {
-      return runSerializable(
-          () -> attemptPost(idempotencyKey, fingerprint, cleanDescription, cleanEffective, lines));
+      PostingOutcome outcome =
+          runSerializable(
+              () ->
+                  attemptPost(
+                      idempotencyKey, fingerprint, cleanDescription, cleanEffective, lines));
+      // Committed, response not yet written: the second crash window.
+      crash.awaitAfterCommit();
+      return outcome;
     } catch (DuplicateKeyException e) {
       // The unique key — not a check-then-insert race — chose the winner. Our whole
       // attempt rolled back; read the winner outside it and compare fingerprints.
@@ -115,9 +125,13 @@ public class PostingService {
     PostingFingerprint fingerprint =
         PostingFingerprint.v1Reversal(targetId, cleanReason, cleanEffective);
     try {
-      return runSerializable(
-          () ->
-              attemptReversal(idempotencyKey, fingerprint, targetId, cleanReason, cleanEffective));
+      PostingOutcome outcome =
+          runSerializable(
+              () ->
+                  attemptReversal(
+                      idempotencyKey, fingerprint, targetId, cleanReason, cleanEffective));
+      crash.awaitAfterCommit();
+      return outcome;
     } catch (DuplicateKeyException e) {
       return resolveReversalRace(idempotencyKey, fingerprint);
     }
@@ -180,6 +194,9 @@ public class PostingService {
             description,
             effectiveAt);
     postings.insertEntries(id, currency, lines);
+    // Crash window one: header plus entries are inserted, the transaction is still
+    // open. A SIGKILL here must leave neither row behind.
+    crash.awaitBeforeCommit();
     // Success is not visible to HTTP until commit plus all deferred triggers succeed.
     return new PostingOutcome.Created(id);
   }
@@ -236,6 +253,7 @@ public class PostingService {
             reason,
             effectiveAt);
     postings.insertEntries(id, currency, inverse);
+    crash.awaitBeforeCommit();
     return new PostingOutcome.Created(id);
   }
 
