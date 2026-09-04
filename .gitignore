@@ -15,6 +15,13 @@ out/
 *.war
 *.ear
 
+# Exception: the Gradle wrapper jar is COMMITTED on purpose
+# (reproducible build without mise or a system Gradle).
+!gradle/wrapper/gradle-wrapper.jar
+
+# No Node in this project; ignore a stale undeletable empty dir explicitly.
+node_modules/
+
 # Test / coverage reports
 TestResults/
 
