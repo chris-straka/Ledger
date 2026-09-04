@@ -179,6 +179,9 @@ projects:
       - id: ledger-reversal
         track: both
         text: "Implemented exact reversals as new server-generated inverse postings (double-reversal and reversal-of-reversal refused), with overdraft policy still applied."
+      - id: ledger-listing
+        track: both
+        text: "Added account statements as keyset-paginated entry listings (opaque cursors, bounded limits), keeping balances derived and amounts as integer strings."
       - id: ledger-crash
         track: swe
         text: "Proved crash atomicity with an isolated SIGKILL harness: kill before commit leaves nothing, kill after commit replays to the original, and per-currency conservation audits zero."

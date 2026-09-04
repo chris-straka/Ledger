@@ -12,7 +12,10 @@ import java.math.BigInteger;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -72,6 +75,58 @@ public class AccountRepository {
   public Optional<BigInteger> balanceMinorOf(AccountId id) {
     return balanceOf(id).map(AccountBalance::balanceMinor);
   }
+
+  /**
+   * One keyset page of an account's journal lines in immutable order (recordedAt, postingId,
+   * lineNumber). Fetches one row past the page so the caller can tell a next page exists.
+   */
+  public List<AccountEntry> listEntries(AccountId id, EntryCursorBean after, int fetch) {
+    String sql =
+        """
+        SELECT e.posting_id, e.line_number, e.side, e.amount_minor, e.currency_code,
+            p.posting_kind, p.description, p.recorded_at
+        FROM ledger_entry e JOIN ledger_posting p ON p.id = e.posting_id
+        WHERE e.account_id = :id
+        """;
+    if (after != null) {
+      sql += " AND (p.recorded_at, e.posting_id, e.line_number) > (:rec, :pid, :line)";
+    }
+    sql += " ORDER BY p.recorded_at, e.posting_id, e.line_number LIMIT :fetch";
+    var query = jdbc.sql(sql).param("id", id.value()).param("fetch", fetch);
+    if (after != null) {
+      query =
+          query
+              .param("rec", Timestamp.from(after.recordedAt()))
+              .param("pid", after.postingId())
+              .param("line", after.lineNumber());
+    }
+    return query
+        .query(
+            (rs, n) ->
+                new AccountEntry(
+                    (UUID) rs.getObject("posting_id"),
+                    rs.getInt("line_number"),
+                    rs.getString("side"),
+                    Long.toString(rs.getLong("amount_minor")),
+                    rs.getString("currency_code"),
+                    rs.getString("posting_kind"),
+                    rs.getString("description"),
+                    rs.getTimestamp("recorded_at").toInstant()))
+        .list();
+  }
+
+  public record AccountEntry(
+      UUID postingId,
+      int lineNumber,
+      String side,
+      String amountMinor,
+      String currency,
+      String postingKind,
+      String description,
+      Instant recordedAt) {}
+
+  /** Cursor fields without importing the transport codec into persistence. */
+  public record EntryCursorBean(Instant recordedAt, UUID postingId, int lineNumber) {}
 
   public Optional<AccountBalance> balanceOf(AccountId id) {
     return jdbc.sql(

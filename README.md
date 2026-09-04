@@ -36,7 +36,7 @@ make test integration-test
 ## API
 
 - `POST /v1/accounts` → 201 + `Location`; `GET /v1/accounts/{id}`; `GET /v1/accounts/{id}/balance`
-  (derived, integer string).
+  (derived, integer string); `GET /v1/accounts/{id}/entries?limit=&cursor=` (keyset statement).
 - `POST /v1/postings` (requires `Idempotency-Key`) → 201; replay → 200 + `Idempotency-Replayed`;
   key conflict → 409; overdraft → 409; invalid → 422.
 - `GET /v1/postings/{id}`; `POST /v1/postings/{id}/reversals` (new key; server-built inverse).

@@ -42,6 +42,11 @@ public class ProblemAdvice {
     return problem(HttpStatus.BAD_REQUEST, "MALFORMED_REQUEST", "malformed request syntax", e);
   }
 
+  @ExceptionHandler(IllegalArgumentException.class)
+  public ProblemDetail badPaging(IllegalArgumentException e) {
+    return problem(HttpStatus.BAD_REQUEST, "MALFORMED_REQUEST", "malformed pagination", e);
+  }
+
   @ExceptionHandler(InvalidAccountException.class)
   public ProblemDetail accountInvalid(InvalidAccountException e) {
     return problem(HttpStatus.UNPROCESSABLE_ENTITY, "ACCOUNT_INVALID", e.getMessage(), e);

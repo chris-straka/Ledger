@@ -7,6 +7,8 @@ import dev.straka.ledger.account.domain.CurrencyCode;
 import dev.straka.ledger.account.domain.InvalidAccountException;
 import dev.straka.ledger.account.domain.OverdraftPolicy;
 import dev.straka.ledger.account.persistence.AccountRepository;
+import java.util.ArrayList;
+import java.util.List;
 import org.springframework.stereotype.Service;
 
 /**
@@ -32,6 +34,44 @@ public class AccountService {
 
   public Account get(AccountId id) {
     return accounts.requireById(id);
+  }
+
+  public EntryPage entries(AccountId id, String cursorRaw, String limitRaw) {
+    accounts.requireById(id);
+    AccountRepository.EntryCursorBean after = null;
+    if (cursorRaw != null && !cursorRaw.isBlank()) {
+      EntryCursor parsed = EntryCursor.parse(cursorRaw);
+      after =
+          new AccountRepository.EntryCursorBean(
+              parsed.recordedAt(), parsed.postingId(), parsed.lineNumber());
+    }
+    int limit = parseLimit(limitRaw);
+    List<AccountRepository.AccountEntry> rows = accounts.listEntries(id, after, limit + 1);
+    List<EntryPage.Entry> page = new ArrayList<>();
+    String nextCursor = null;
+    for (int i = 0; i < Math.min(limit, rows.size()); i++) {
+      page.add(EntryPage.Entry.from(rows.get(i)));
+    }
+    if (rows.size() > limit) {
+      AccountRepository.AccountEntry last = rows.get(limit - 1);
+      nextCursor = new EntryCursor(last.recordedAt(), last.postingId(), last.lineNumber()).encode();
+    }
+    return new EntryPage(List.copyOf(page), nextCursor);
+  }
+
+  private static int parseLimit(String raw) {
+    if (raw == null || raw.isBlank()) {
+      return 50;
+    }
+    try {
+      int limit = Integer.parseInt(raw.trim());
+      if (limit < 1 || limit > 500) {
+        throw new IllegalArgumentException("limit must be 1-500");
+      }
+      return limit;
+    } catch (NumberFormatException e) {
+      throw new IllegalArgumentException("limit must be an integer");
+    }
   }
 
   public AccountRepository.AccountBalance balance(AccountId id) {

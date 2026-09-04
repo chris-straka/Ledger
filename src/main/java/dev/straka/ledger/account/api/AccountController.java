@@ -1,6 +1,7 @@
 package dev.straka.ledger.account.api;
 
 import dev.straka.ledger.account.application.AccountService;
+import dev.straka.ledger.account.application.EntryPage;
 import dev.straka.ledger.account.domain.Account;
 import dev.straka.ledger.account.domain.AccountId;
 import dev.straka.ledger.account.persistence.AccountRepository;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -54,5 +56,28 @@ public class AccountController {
         balance.accountId().toString(),
         balance.currency().code(),
         balance.balanceMinor().toString());
+  }
+
+  @GetMapping("/{accountId}/entries")
+  public EntryPageResponse entries(
+      @PathVariable UUID accountId,
+      @RequestParam(required = false) String cursor,
+      @RequestParam(required = false) String limit) {
+    EntryPage page = accounts.entries(new AccountId(accountId), cursor, limit);
+    return new EntryPageResponse(
+        page.entries().stream()
+            .map(
+                e ->
+                    new EntryPageResponse.EntryResponse(
+                        e.postingId().toString(),
+                        e.lineNumber(),
+                        e.side(),
+                        e.amountMinor(),
+                        e.currency(),
+                        e.postingKind(),
+                        e.description(),
+                        e.recordedAt()))
+            .toList(),
+        page.nextCursor());
   }
 }
