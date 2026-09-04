@@ -19,7 +19,9 @@ services:
       LEDGER_APP: ${POSTGRES_APP:-ledger_app}
       LEDGER_APP_PASSWORD: ${POSTGRES_APP_PASSWORD:?set in .env}
     volumes:
-      - ledger-postgres:/var/lib/postgresql/data
+      # PG18+ images expect the mount at /var/lib/postgresql (versioned data
+      # dir underneath); mounting .../data directly fails fast on startup.
+      - ledger-postgres:/var/lib/postgresql
       # Fresh-cluster role bootstrap only. Schema and grants are Flyway-owned (Phase 2).
       - ./docker/postgres:/docker-entrypoint-initdb.d:ro
     healthcheck:
