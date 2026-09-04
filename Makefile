@@ -5,15 +5,18 @@ help:
 		| awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-22s\033[0m %s\n", $$1, $$2}'
 
 # .PHONY tells Make these are cmd names, not files on the hard drive.
-.PHONY: help dev up upd down clean format check test integration-test crash-test verify demo logs
+.PHONY: help dev jar up upd down clean format check test integration-test crash-test verify demo logs
+
+jar: ## build the application jar (Gradle is incremental; safe to re-run)
+	./gradlew build
 
 dev: ## Tilt development loop
 	tilt up
 
-up: ## docker compose up (foreground)
+up: jar ## docker compose up (foreground; builds the jar first)
 	docker compose up --remove-orphans
 
-upd: ## docker compose up -d
+upd: jar ## docker compose up -d (builds the jar first)
 	docker compose up -d
 
 down: ## docker compose down

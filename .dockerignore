@@ -5,7 +5,12 @@
 !.env.example
 .DS_Store
 **/.DS_Store
-build
+# build/ is excluded except the boot jar the Dockerfile copies in.
+# (Negation must re-include each parent dir: dockerignore can't re-include
+# a file inside an excluded directory otherwise.)
+build/
+!build/libs/
+!build/libs/*.jar
 .gradle
 .idea
 .vscode
