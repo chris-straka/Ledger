@@ -3,20 +3,25 @@
 Reviewed 2026-09-04. Ledger rewrite backlog, ordered by PORT.md phases. This file is a
 backlog, not a history of completed work.
 
-## Phase 1 — Java skeleton and local loop (in progress)
+## Phase 1 — Java skeleton and local loop (done)
 
-- Pin exact Spring Boot 4.1.x patch and Gradle 9.x wrapper version.
-- Minimal Boot application: validated config, liveness/readiness with honest semantics.
-- Production Dockerfile (non-root).
-- Rebuilt Compose (Postgres, role bootstrap, migration wiring, app), Tiltfile, Makefile.
-- Gate: wrapper validation, formatting, unit smoke test,
-  `docker compose config --quiet`, app startup, Tilt readiness.
+- Pinned Spring Boot 4.1.1, Gradle 9.7.1 wrapper, Postgres 18.6, Flyway 13.5.0.
+- Minimal Boot application (Flyway disabled: app holds only runtime creds),
+  liveness + DB-backed readiness, non-root Dockerfile.
+- Rebuilt Compose (Postgres, role bootstrap, one-shot Flyway migrate, app),
+  Tiltfile, Makefile, `.env.example`.
+- Gate passed: `spotlessCheck`, unit smoke test, `build`,
+  `docker compose config --quiet`, real `up` with V1–V3 applied and readiness UP.
 
-## Phase 2 — Schema, roles, database defenses
+## Phase 2 — Schema, roles, database defenses (done)
 
-- Flyway migrations: grants, currency reference, journal tables, deferred triggers.
-- Testcontainers bootstrap on the same Postgres image, runtime-role connections.
-- Direct-JDBC commit tests before any posting API.
+- Flyway V1 schema/keys/views/seeds, V2 runtime grants + immutable triggers,
+  V3 deferred posting/overdraft/reversal validation.
+- Testcontainers bootstrap on postgres:18.6 with owner/app roles; all tests
+  connect as `ledger_app` with explicit commits.
+- 40 direct-JDBC commit tests green: balance, checks, currency, raw
+  overdraft, closure, immutability (42501 + 25001 backstop), role identity.
+  Conservation audited after every test.
 
 ## Phase 3 — Pure domain and account slice
 

@@ -7,6 +7,11 @@ spring:
     password: ${LEDGER_DB_PASSWORD:ledger_app_dev_only}
     hikari:
       maximum-pool-size: 10
+  # Migrations run as ledger_owner in the one-shot Compose `migrate` service.
+  # The app holds only ledger_app credentials, so it must never migrate —
+  # Flyway auto-configuration would attempt DDL as the runtime role and fail.
+  flyway:
+    enabled: false
 
 management:
   endpoints:

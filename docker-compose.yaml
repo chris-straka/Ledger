@@ -31,23 +31,22 @@ services:
       retries: 10
       start_period: 10s
 
-  # One-shot migration: same Flyway SQL the app validates against, run as owner.
-  # No migration exists yet (Phase 2); this service currently validates wiring only.
+  # One-shot migration: the Flyway SQL in src/main/resources/db/migration,
+  # run as ledger_owner. The app never receives these credentials and has
+  # Flyway disabled (see application.yaml).
   migrate:
-    image: postgres:18.6
+    image: flyway/flyway:13.5.0
     depends_on:
       postgres:
         condition: service_healthy
-    environment:
-      PGHOST: postgres
-      PGDATABASE: ${POSTGRES_DB:-ledger}
-      PGUSER: ${POSTGRES_OWNER:-ledger_owner}
-      PGPASSWORD: ${POSTGRES_OWNER_PASSWORD:?set in .env}
     volumes:
-      - ./src/main/resources/db/migration:/migrations:ro
-    # Phase 2 replaces this marker with a real Flyway invocation.
+      - ./src/main/resources/db/migration:/flyway/sql:ro
     command: >
-      bash -c "ls /migrations && psql -c 'select 1'"
+      -url=jdbc:postgresql://postgres:5432/${POSTGRES_DB:-ledger}
+      -user=${POSTGRES_OWNER:-ledger_owner}
+      -password=${POSTGRES_OWNER_PASSWORD:?set in .env}
+      -connectRetries=10
+      migrate
     deploy:
       restart_policy:
         condition: none

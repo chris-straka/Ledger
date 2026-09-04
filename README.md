@@ -12,7 +12,10 @@ proven.
 
 ## Status
 
-Scaffolding (PORT.md Phase 0–1). No ledger API exists yet.
+PORT.md Phases 0–2 done. The database enforces balanced, single-currency,
+immutable postings with per-account overdraft policy (40 Testcontainers bypass
+tests green); `docker compose up` migrates and serves readiness UP. No ledger
+HTTP API exists yet — that is Phase 3–4.
 
 ## Quickstart (target)
 
