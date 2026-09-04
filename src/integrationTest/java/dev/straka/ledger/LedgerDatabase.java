@@ -23,6 +23,7 @@ final class LedgerDatabase {
 
   static final String IMAGE = "postgres:18.6";
   static final String DB = "ledger";
+  static final String ANOMALY_DB = "ledger_anomaly";
   static final String OWNER = "ledger_owner";
   static final String OWNER_PASSWORD = "ledger_owner_integration_only";
   static final String APP = "ledger_app";
@@ -36,6 +37,7 @@ final class LedgerDatabase {
 
   private static HikariDataSource appPool;
   private static String ledgerUrl;
+  private static String anomalyUrl;
 
   private LedgerDatabase() {}
 
@@ -45,20 +47,22 @@ final class LedgerDatabase {
     }
     CONTAINER.start();
     ledgerUrl = CONTAINER.getJdbcUrl().replaceAll("/test(\\?.*)?$", "/" + DB + "$1");
+    anomalyUrl = CONTAINER.getJdbcUrl().replaceAll("/test(\\?.*)?$", "/" + ANOMALY_DB + "$1");
     try (Connection admin = DriverManager.getConnection(CONTAINER.getJdbcUrl(), "test", "test");
         Statement stmt = admin.createStatement()) {
       stmt.execute("CREATE ROLE \"" + OWNER + "\" LOGIN PASSWORD '" + OWNER_PASSWORD + "'");
       stmt.execute("CREATE ROLE \"" + APP + "\" LOGIN PASSWORD '" + APP_PASSWORD + "'");
       stmt.execute("CREATE DATABASE \"" + DB + "\" OWNER \"" + OWNER + "\"");
+      stmt.execute("CREATE DATABASE \"" + ANOMALY_DB + "\" OWNER \"" + OWNER + "\"");
       stmt.execute("GRANT CONNECT ON DATABASE \"" + DB + "\" TO \"" + APP + "\"");
+      stmt.execute("GRANT CONNECT ON DATABASE \"" + ANOMALY_DB + "\" TO \"" + APP + "\"");
     } catch (SQLException e) {
       throw new IllegalStateException("bootstrap failed", e);
     }
-    Flyway.configure()
-        .dataSource(ledgerUrl, OWNER, OWNER_PASSWORD)
-        .locations("classpath:db/migration")
-        .load()
-        .migrate();
+    migrate(ledgerUrl);
+    // The anomaly database carries the identical schema but is deliberately excluded
+    // from the shared conservation audit: the weaker-isolation test leaves it overdrawn.
+    migrate(anomalyUrl);
     HikariConfig config = new HikariConfig();
     config.setJdbcUrl(ledgerUrl);
     config.setUsername(APP);
@@ -67,9 +71,24 @@ final class LedgerDatabase {
     appPool = new HikariDataSource(config);
   }
 
+  private static void migrate(String url) {
+    Flyway.configure()
+        .dataSource(url, OWNER, OWNER_PASSWORD)
+        .locations("classpath:db/migration")
+        .load()
+        .migrate();
+  }
+
   /** Fresh connection as the runtime role. Callers own commit/rollback and closing. */
   static Connection appConnection() throws SQLException {
     return appPool.getConnection();
+  }
+
+  /** Raw connection to the disposable anomaly database. Never conservation-audited. */
+  static Connection anomalyConnection(String user, String password) throws SQLException {
+    Connection conn = DriverManager.getConnection(anomalyUrl, user, password);
+    conn.setAutoCommit(false);
+    return conn;
   }
 
   static String ledgerUrl() {

@@ -57,6 +57,7 @@ public class PostingService {
 
   private final PostingRepository postings;
   private final AccountRepository accounts;
+  private final AttemptRecorder attempts;
   private final TransactionTemplate serializable;
   private final Clock clock;
   private final Sleeper sleeper;
@@ -64,11 +65,13 @@ public class PostingService {
   public PostingService(
       PostingRepository postings,
       AccountRepository accounts,
+      AttemptRecorder attempts,
       PlatformTransactionManager transactions,
       Clock clock,
       Sleeper sleeper) {
     this.postings = postings;
     this.accounts = accounts;
+    this.attempts = attempts;
     this.clock = clock;
     this.sleeper = sleeper;
     this.serializable = new TransactionTemplate(transactions);
@@ -91,6 +94,7 @@ public class PostingService {
 
     for (int attempt = 1; ; attempt++) {
       try {
+        attempts.attemptStarted();
         return serializable.execute(
             status ->
                 attemptPost(idempotencyKey, fingerprint, cleanDescription, cleanEffective, lines));
@@ -100,10 +104,12 @@ public class PostingService {
         return resolveIdempotencyRace(idempotencyKey, fingerprint);
       } catch (DataAccessException e) {
         if (isSerializationFailure(e) && attempt < MAX_ATTEMPTS) {
+          attempts.retryScheduled();
           backoff(attempt);
           continue;
         }
         if (isSerializationFailure(e)) {
+          attempts.exhausted();
           throw new PostingRetryExhaustedException(
               "posting did not serialize after " + MAX_ATTEMPTS + " attempts");
         }

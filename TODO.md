@@ -46,9 +46,14 @@ backlog, not a history of completed work.
 - 23 unit + 58 integration tests green (incl. 20-way replay race);
   live worked example matches PORT.md to the minor unit.
 
-## Phase 5 — Overdraft and concurrency proof
+## Phase 5 — Overdraft and concurrency proof (done)
 
-- Whole-transaction retry, N-thread tests, weaker-isolation anomaly demonstration.
+- 50-thread exact-sum posting storm (client retries on 503 per contract),
+  10-way different-payload key election, overdraft race rounds until a
+  recorded serialization retry fires: one 201, one 409, final 2000.
+- REPEATABLE READ harness in a disposable database exhibits the write skew
+  (−6000 on DENY) that SERIALIZABLE prevents; trigger alone is insufficient.
+- 62 integration tests green with per-currency conservation after every test.
 
 ## Phase 6 — Exact reversals
 
