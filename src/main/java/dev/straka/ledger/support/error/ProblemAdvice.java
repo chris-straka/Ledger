@@ -7,6 +7,7 @@ import dev.straka.ledger.posting.application.IdempotencyConflictException;
 import dev.straka.ledger.posting.application.OverdraftRejectedException;
 import dev.straka.ledger.posting.application.PostingNotFoundException;
 import dev.straka.ledger.posting.application.PostingRetryExhaustedException;
+import dev.straka.ledger.posting.application.ReversalConflictException;
 import dev.straka.ledger.posting.domain.InvalidIdempotencyKeyException;
 import dev.straka.ledger.posting.domain.InvalidPostingException;
 import java.net.URI;
@@ -79,6 +80,11 @@ public class ProblemAdvice {
   @ExceptionHandler(IdempotencyConflictException.class)
   public ProblemDetail keyConflict(IdempotencyConflictException e) {
     return problem(HttpStatus.CONFLICT, "IDEMPOTENCY_CONFLICT", e.getMessage(), e);
+  }
+
+  @ExceptionHandler(ReversalConflictException.class)
+  public ProblemDetail reversalConflict(ReversalConflictException e) {
+    return problem(HttpStatus.CONFLICT, "REVERSAL_CONFLICT", e.getMessage(), e);
   }
 
   @ExceptionHandler(PostingRetryExhaustedException.class)

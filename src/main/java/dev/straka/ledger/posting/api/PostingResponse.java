@@ -8,6 +8,7 @@ import java.util.List;
 public record PostingResponse(
     String postingId,
     String kind,
+    String reversesPostingId,
     String currency,
     int entryCount,
     String description,
@@ -21,6 +22,7 @@ public record PostingResponse(
     return new PostingResponse(
         posting.id().toString(),
         posting.kind().name(),
+        posting.reversesPostingId() == null ? null : posting.reversesPostingId().toString(),
         posting.currency().code(),
         posting.entryCount(),
         posting.description(),

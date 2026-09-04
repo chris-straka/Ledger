@@ -163,19 +163,22 @@ projects:
         text: "Pinned the build (Gradle 9.x wrapper, Java 25 toolchain, Spring Boot 4.1.x BOM, Postgres 18.6 in Compose and Testcontainers), with a non-root container, localhost-bound ports, and health-gated migration ordering."
       - id: ledger-balance
         track: both
-        text: "TODO: Enforce balanced postings in the domain and with deferred Postgres constraint triggers, proven by raw-JDBC commit tests that bypass the application."
+        text: "Enforce balanced postings in the domain (BigInteger sums) and with deferred Postgres constraint triggers, proven by raw-JDBC commit tests that bypass the application."
       - id: ledger-immutability
         track: swe
-        text: "TODO: Revoked UPDATE/DELETE/TRUNCATE from the runtime Postgres role and proved the database refuses mutations, with corrections modeled as reversal postings only."
+        text: "Revoked UPDATE/DELETE/TRUNCATE from the runtime Postgres role and proved the database refuses mutations, with corrections modeled as exact reversal postings only."
       - id: ledger-currency
         track: swe
-        text: "TODO: Restricted each posting to one currency via composite foreign keys, storing money as integer minor units with overflow-safe aggregation (no float/double in the money path)."
+        text: "Restricted each posting to one currency via composite foreign keys, storing money as integer minor units with overflow-safe aggregation (no float/double in the money path)."
       - id: ledger-idempotency
         track: both
-        text: "TODO: Keyed posting creation with SHA-256 semantic fingerprints so replays return the original and conflicting reuses get 409, including a 20-way concurrent replay test."
+        text: "Keyed posting creation with SHA-256 semantic fingerprints so replays return the original and conflicting reuses get 409, including a 20-way concurrent replay test."
       - id: ledger-concurrency
         track: swe
-        text: "TODO: Ran postings at SERIALIZABLE isolation with whole-transaction retry so N threads against one account produce the exact arithmetic balance, with a weaker-isolation test showing the write skew it prevents."
+        text: "Ran postings at SERIALIZABLE isolation with whole-transaction retry so 50 threads against one account produce the exact arithmetic balance, with a weaker-isolation test showing the write skew it prevents."
+      - id: ledger-reversal
+        track: both
+        text: "Implemented exact reversals as new server-generated inverse postings (double-reversal and reversal-of-reversal refused), with overdraft policy still applied."
       - id: ledger-crash
         track: swe
         text: "TODO: Proved crash atomicity with an isolated SIGKILL harness: kill before commit leaves nothing, kill after commit replays to the original, and per-currency conservation audits zero."

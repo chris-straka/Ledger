@@ -7,6 +7,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Semantic fingerprint: versioned SHA-256 over a documented canonical tuple, so a retry after a
@@ -22,6 +23,24 @@ public record PostingFingerprint(byte[] sha256) {
       throw new InvalidPostingException("fingerprint must be 32 bytes");
     }
     sha256 = sha256.clone();
+  }
+
+  /**
+   * Reversal fingerprint over the operation kind, target posting ID, reason, and normalized
+   * instant. Server-derived inverse lines are not client input and stay out of the tuple.
+   */
+  public static PostingFingerprint v1Reversal(UUID target, String reason, Instant effectiveAt) {
+    try {
+      MessageDigest digest = MessageDigest.getInstance("SHA-256");
+      field(digest, "v1");
+      field(digest, PostingKind.REVERSAL.name());
+      field(digest, target.toString());
+      field(digest, reason);
+      field(digest, effectiveAt.toString());
+      return new PostingFingerprint(digest.digest());
+    } catch (NoSuchAlgorithmException e) {
+      throw new IllegalStateException("SHA-256 unavailable", e);
+    }
   }
 
   public static PostingFingerprint v1Standard(

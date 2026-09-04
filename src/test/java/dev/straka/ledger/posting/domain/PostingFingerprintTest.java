@@ -71,6 +71,23 @@ class PostingFingerprintTest {
   }
 
   @Test
+  void reversalFingerprintsBindTargetReasonAndInstant() {
+    UUID target = UUID.randomUUID();
+    assertEquals(
+        PostingFingerprint.v1Reversal(target, "oops", WHEN),
+        PostingFingerprint.v1Reversal(target, "oops", WHEN));
+    assertNotEquals(
+        PostingFingerprint.v1Reversal(target, "oops", WHEN),
+        PostingFingerprint.v1Reversal(UUID.randomUUID(), "oops", WHEN));
+    assertNotEquals(
+        PostingFingerprint.v1Reversal(target, "oops", WHEN),
+        PostingFingerprint.v1Reversal(target, "different", WHEN));
+    assertNotEquals(
+        PostingFingerprint.v1Reversal(target, "oops", WHEN),
+        PostingFingerprint.v1Reversal(target, "oops", WHEN.plusSeconds(1)));
+  }
+
+  @Test
   void keysAreValidated() {
     assertEquals("abc-123._:X", new IdempotencyKey("abc-123._:X").value());
     assertThrows(InvalidIdempotencyKeyException.class, () -> new IdempotencyKey("has space"));

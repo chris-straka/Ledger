@@ -92,16 +92,46 @@ public class PostingService {
     PostingFingerprint fingerprint =
         PostingFingerprint.v1Standard(cleanDescription, cleanEffective, lines);
 
+    try {
+      return runSerializable(
+          () -> attemptPost(idempotencyKey, fingerprint, cleanDescription, cleanEffective, lines));
+    } catch (DuplicateKeyException e) {
+      // The unique key — not a check-then-insert race — chose the winner. Our whole
+      // attempt rolled back; read the winner outside it and compare fingerprints.
+      return resolveIdempotencyRace(idempotencyKey, fingerprint);
+    }
+  }
+
+  /**
+   * Exact reversal of a standard posting. The server derives inverse lines from the committed
+   * original; clients supply only a reason and effective time, so an arbitrary posting can never be
+   * labeled a reversal. Ordinary overdraft policy applies — a later-spent account can refuse its
+   * own history being undone.
+   */
+  public PostingOutcome reverse(String key, UUID targetId, String reason, Instant effectiveAt) {
+    IdempotencyKey idempotencyKey = new IdempotencyKey(key);
+    String cleanReason = cleanDescription(reason);
+    Instant cleanEffective = cleanEffectiveAt(effectiveAt);
+    PostingFingerprint fingerprint =
+        PostingFingerprint.v1Reversal(targetId, cleanReason, cleanEffective);
+    try {
+      return runSerializable(
+          () ->
+              attemptReversal(idempotencyKey, fingerprint, targetId, cleanReason, cleanEffective));
+    } catch (DuplicateKeyException e) {
+      return resolveReversalRace(idempotencyKey, fingerprint);
+    }
+  }
+
+  private <T> T runSerializable(java.util.function.Supplier<T> work) {
     for (int attempt = 1; ; attempt++) {
       try {
         attempts.attemptStarted();
-        return serializable.execute(
-            status ->
-                attemptPost(idempotencyKey, fingerprint, cleanDescription, cleanEffective, lines));
+        return serializable.execute(status -> work.get());
       } catch (DuplicateKeyException e) {
-        // The unique key — not a check-then-insert race — chose the winner. Our whole
-        // attempt rolled back; read the winner outside it and compare fingerprints.
-        return resolveIdempotencyRace(idempotencyKey, fingerprint);
+        // Key semantics belong to the caller (replay vs. already-reversed); the
+        // rolled-back attempt carries no other verdict.
+        throw e;
       } catch (DataAccessException e) {
         if (isSerializationFailure(e) && attempt < MAX_ATTEMPTS) {
           attempts.retryScheduled();
@@ -162,6 +192,61 @@ public class PostingService {
             .orElseThrow(
                 () -> new PostingRetryExhaustedException("idempotency winner vanished; retry"));
     return compare(winner, fingerprint);
+  }
+
+  private PostingOutcome attemptReversal(
+      IdempotencyKey key,
+      PostingFingerprint fingerprint,
+      UUID targetId,
+      String reason,
+      Instant effectiveAt) {
+    PostingRepository.CommittedPosting existing = postings.findByKey(key).orElse(null);
+    if (existing != null) {
+      return compare(existing, fingerprint);
+    }
+    PostingRepository.StoredPosting original =
+        postings
+            .findById(targetId)
+            .orElseThrow(
+                () -> new PostingNotFoundException("original posting not found: " + targetId));
+    if (original.kind() != PostingKind.STANDARD) {
+      throw new ReversalConflictException("only standard postings can be reversed");
+    }
+    List<PostingLine> inverse = new ArrayList<>(original.entries().size());
+    for (PostingRepository.StoredEntry entry : original.entries()) {
+      EntrySide flipped = entry.side() == EntrySide.DEBIT ? EntrySide.CREDIT : EntrySide.DEBIT;
+      inverse.add(
+          new PostingLine(entry.accountId(), flipped, new EntryAmount(entry.amountMinor())));
+    }
+    Map<AccountId, PostingRepository.ReferencedAccount> referenced = loadAccounts(inverse);
+    CurrencyCode currency = singleCurrency(referenced);
+    if (!currency.equals(original.currency())) {
+      throw new ReversalConflictException("original posting currency changed; cannot reverse");
+    }
+    PostingDraft draft = new PostingDraft(currency, inverse);
+    rejectOverdraft(draft, referenced);
+    UUID id =
+        postings.insertHeader(
+            key,
+            fingerprint,
+            PostingKind.REVERSAL,
+            targetId,
+            currency,
+            inverse.size(),
+            reason,
+            effectiveAt);
+    postings.insertEntries(id, currency, inverse);
+    return new PostingOutcome.Created(id);
+  }
+
+  private PostingOutcome resolveReversalRace(IdempotencyKey key, PostingFingerprint fingerprint) {
+    // A unique violation here is either our key (replay/conflict) or the target's
+    // single-reversal slot (already reversed). The key lookup tells them apart.
+    PostingRepository.CommittedPosting winner = postings.findByKey(key).orElse(null);
+    if (winner != null) {
+      return compare(winner, fingerprint);
+    }
+    throw new ReversalConflictException("original posting is already reversed");
   }
 
   private static PostingOutcome compare(

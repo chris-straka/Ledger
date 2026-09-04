@@ -60,6 +60,25 @@ public class PostingController {
     return load(postingId);
   }
 
+  @PostMapping("/{postingId}/reversals")
+  public ResponseEntity<PostingResponse> reverse(
+      @PathVariable UUID postingId,
+      @RequestHeader("Idempotency-Key") String key,
+      @Valid @RequestBody CreateReversalRequest request) {
+    PostingOutcome outcome =
+        postings.reverse(key, postingId, request.reason().trim(), request.effectiveAt());
+    UUID id =
+        switch (outcome) {
+          case PostingOutcome.Created created -> created.postingId();
+          case PostingOutcome.Replayed replayed -> replayed.postingId();
+        };
+    PostingResponse body = load(id);
+    if (outcome instanceof PostingOutcome.Replayed) {
+      return ResponseEntity.ok().header("Idempotency-Replayed", "true").body(body);
+    }
+    return ResponseEntity.created(URI.create("/v1/postings/" + id)).body(body);
+  }
+
   private PostingResponse load(UUID id) {
     return repository
         .findById(id)

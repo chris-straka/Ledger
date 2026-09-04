@@ -55,7 +55,12 @@ backlog, not a history of completed work.
   (−6000 on DENY) that SERIALIZABLE prevents; trigger alone is insufficient.
 - 62 integration tests green with per-currency conservation after every test.
 
-## Phase 6 — Exact reversals
+## Phase 6 — Exact reversals (done)
+
+- Server-generated inverse postings; replay/conflict semantics per key;
+  double-reversal refused via the unique slot, reversal-of-reversal refused
+  by kind, fraud fails at commit, spent history can refuse via overdraft.
+- 7 reversal tests green (API + raw JDBC); resume claims promoted to proven.
 
 ## Phase 7 — Crash/ambiguous-response harness
 

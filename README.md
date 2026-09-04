@@ -16,7 +16,8 @@ PORT.md Phases 0–2 done. The database enforces balanced, single-currency,
 immutable postings with per-account overdraft policy (40 Testcontainers bypass
 tests green); `docker compose up` migrates and serves readiness UP. Account
 endpoints (create/get/derived balance) and atomic postings (fingerprint
-idempotency, serializable commit, replay/conflict semantics) are live.
+idempotency, serializable commit, replay/conflict semantics, exact
+reversals) are live.
 
 ## Quickstart (target)
 
