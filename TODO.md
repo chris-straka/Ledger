@@ -23,10 +23,14 @@ backlog, not a history of completed work.
   overdraft, closure, immutability (42501 + 25001 backstop), role identity.
   Conservation audited after every test.
 
-## Phase 3 — Pure domain and account slice
+## Phase 3 — Pure domain and account slice (done)
 
-- Money/currency/ID types, normal-side math, posting draft validation (no Spring).
-- Account create/get/balance endpoints.
+- Money/currency/ID types, normal-side math, BigInteger posting draft
+  validation (no Spring); ArchUnit guards the domain boundary.
+- Account create/get/balance endpoints with ProblemDetail errors; balances
+  derived in one statement and returned as integer strings.
+- 19 unit tests + 8 HTTP slice tests green; live `up` proves create, get,
+  zero balance, and duplicate 409.
 
 ## Phase 4 — Atomic posting and reads
 

@@ -1,0 +1,114 @@
+package dev.straka.ledger.account.persistence;
+
+import dev.straka.ledger.account.application.AccountConflictException;
+import dev.straka.ledger.account.application.AccountNotFoundException;
+import dev.straka.ledger.account.domain.Account;
+import dev.straka.ledger.account.domain.AccountId;
+import dev.straka.ledger.account.domain.AccountType;
+import dev.straka.ledger.account.domain.CurrencyCode;
+import dev.straka.ledger.account.domain.InvalidAccountException;
+import dev.straka.ledger.account.domain.OverdraftPolicy;
+import java.math.BigInteger;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.Optional;
+import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DuplicateKeyException;
+import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.stereotype.Repository;
+
+/**
+ * Explicit SQL against the journal tables. Single statements are individually atomic, so this slice
+ * needs no explicit transaction; the posting path (Phase 4) is where SERIALIZABLE multi-statement
+ * transactions begin. Amounts leave the database as scale-zero text parsed into {@link BigInteger}
+ * — never through {@code double}.
+ */
+@Repository
+public class AccountRepository {
+
+  private final JdbcClient jdbc;
+
+  public AccountRepository(JdbcClient jdbc) {
+    this.jdbc = jdbc;
+  }
+
+  public Account create(
+      String code, String name, CurrencyCode currency, AccountType type, OverdraftPolicy policy) {
+    try {
+      return jdbc.sql(
+              """
+              INSERT INTO ledger_account (account_code, name, currency_code, account_type, overdraft_policy)
+              VALUES (:code, :name, :currency, :type, :policy)
+              RETURNING id, account_code, name, currency_code, account_type, overdraft_policy, created_at
+              """)
+          .param("code", code)
+          .param("name", name)
+          .param("currency", currency.code())
+          .param("type", type.name())
+          .param("policy", policy.name())
+          .query(AccountRepository::mapAccount)
+          .single();
+    } catch (DuplicateKeyException e) {
+      throw new AccountConflictException("account code already exists: " + code);
+    } catch (DataAccessException e) {
+      throw translate(e, code);
+    }
+  }
+
+  public Optional<Account> findById(AccountId id) {
+    return jdbc.sql(
+            """
+            SELECT id, account_code, name, currency_code, account_type, overdraft_policy, created_at
+            FROM ledger_account WHERE id = :id
+            """)
+        .param("id", id.value())
+        .query(AccountRepository::mapAccount)
+        .optional();
+  }
+
+  /** Current normal-side balance, derived from entries in one statement. Empty when missing. */
+  public Optional<AccountBalance> balanceOf(AccountId id) {
+    return jdbc.sql(
+            "SELECT account_id, currency_code, balance_minor FROM v_account_balance WHERE account_id = :id")
+        .param("id", id.value())
+        .query(
+            (rs, n) ->
+                new AccountBalance(
+                    new AccountId((java.util.UUID) rs.getObject("account_id")),
+                    new CurrencyCode(rs.getString("currency_code")),
+                    new BigInteger(rs.getString("balance_minor"))))
+        .optional();
+  }
+
+  public Account requireById(AccountId id) {
+    return findById(id).orElseThrow(() -> new AccountNotFoundException("account not found: " + id));
+  }
+
+  private static Account mapAccount(ResultSet rs, int n) throws SQLException {
+    Timestamp created = rs.getTimestamp("created_at");
+    return new Account(
+        new AccountId((java.util.UUID) rs.getObject("id")),
+        rs.getString("account_code"),
+        rs.getString("name"),
+        new CurrencyCode(rs.getString("currency_code")),
+        AccountType.valueOf(rs.getString("account_type")),
+        OverdraftPolicy.valueOf(rs.getString("overdraft_policy")),
+        created.toInstant());
+  }
+
+  private static RuntimeException translate(DataAccessException e, String code) {
+    // SQLSTATE is read off java.sql.SQLException so main code never imports the driver.
+    Throwable cause = e;
+    while (cause != null) {
+      if (cause instanceof SQLException sql && "23503".equals(sql.getSQLState())) {
+        return new InvalidAccountException("unsupported currency for account: " + code);
+      }
+      cause = cause.getCause();
+    }
+    throw e;
+  }
+
+  public record AccountBalance(
+      AccountId accountId, CurrencyCode currency, BigInteger balanceMinor) {}
+}

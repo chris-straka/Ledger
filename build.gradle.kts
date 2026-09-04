@@ -79,3 +79,4 @@ val integrationTest = tasks.register<Test>("integrationTest") {
 tasks.check {
     dependsOn(integrationTest)
 }
+

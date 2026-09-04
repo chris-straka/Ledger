@@ -14,8 +14,8 @@ proven.
 
 PORT.md Phases 0–2 done. The database enforces balanced, single-currency,
 immutable postings with per-account overdraft policy (40 Testcontainers bypass
-tests green); `docker compose up` migrates and serves readiness UP. No ledger
-HTTP API exists yet — that is Phase 3–4.
+tests green); `docker compose up` migrates and serves readiness UP. Account
+endpoints (create/get/derived balance) are live; atomic postings arrive in Phase 4.
 
 ## Quickstart (target)
 

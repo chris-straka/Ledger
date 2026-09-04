@@ -72,6 +72,10 @@ final class LedgerDatabase {
     return appPool.getConnection();
   }
 
+  static String ledgerUrl() {
+    return ledgerUrl;
+  }
+
   /** One-shot owner connection for privileged cleanup only, never for assertions. */
   static Connection ownerConnection() throws SQLException {
     return DriverManager.getConnection(ledgerUrl, OWNER, OWNER_PASSWORD);
