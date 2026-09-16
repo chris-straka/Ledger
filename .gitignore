@@ -50,3 +50,6 @@ secrets.json
 
 # Local database backups (dumps land here; never committed)
 backups/
+
+# Private interview prep (answers stay on this machine)
+docs/INTERVIEW.md
