@@ -1,18 +1,18 @@
 # Ledger
 
-A double-entry ledger in **Java 25 + Spring Boot + Postgres**. 
+A double-entry ledger in **Java 25 + Spring Boot + Postgres**.
 Balances are derived per account from entries. Money moves
-by *postings* — sets of entries that must sum to zero. Nothing is ever updated in place or deleted.
+by _postings_ — sets of entries that must sum to zero. Nothing is ever updated in place or deleted.
 
 The project is meant to be demonstrated and defended in an interview. Prefer a smaller claim the
 code can prove over a larger claim hidden behind comments.
 
 ## The accounting contract
 
-This project *is* its invariants. Each one is a test, and none is optional.
+This project _is_ its invariants. Each one is a test, and none is optional.
 
 1. **Every posting balances.** Debits equal credits, per posting, per currency. Enforced in the
-   domain *and* by a DB constraint so application code cannot bypass it.
+   domain _and_ by a DB constraint so application code cannot bypass it.
 2. **Conservation.** Across the whole ledger, all entry amounts sum to exactly zero. Assert after
    every test, including concurrency and crash tests.
 3. **Immutability.** No `UPDATE` or `DELETE` on `entry` or `posting`, ever. Grants are revoked and

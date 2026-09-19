@@ -1,5 +1,5 @@
 // Ledger build. Spring Boot BOM manages the ecosystem; add a dependency only
-// with a concrete requirement and a design note (PORT.md section 4).
+// with a concrete requirement and a design note.
 plugins {
     java
     id("org.springframework.boot") version "4.1.1"
@@ -46,12 +46,23 @@ tasks.withType<Test> {
     useJUnitPlatform()
 }
 
-// One formatter (PORT.md section 9): google-java-format via Spotless.
+// One formatter per language, both via Spotless (runs in `check` and CI).
 // Pinned: Spotless's default GJF calls a javac internal removed in JDK 25
 // (NoSuchMethodError on DeferredDiagnosticHandler); 1.28.0 works on JDK 17-25.
 spotless {
     java {
         googleJavaFormat("1.28.0")
+    }
+    // Markdown: prettier with proseWrap preserve (mirrors .prettierrc.json) —
+    // normalizes structure and strips trailing whitespace, never reflows prose,
+    // so line breaks stay the author's choice and `spotlessCheck` still bites.
+    // Needs node: pinned in mise.toml, set up in CI.
+    format("markdown") {
+        target("**/*.md")
+        // resume.md is YAML data with a .md extension, not prose: prettier
+        // would flatten its mapping structure into markdown lists.
+        targetExclude("resume.md")
+        prettier("3.6.2").config(mapOf("filepath" to "README.md", "proseWrap" to "preserve"))
     }
 }
 
@@ -61,7 +72,7 @@ tasks.withType<JavaCompile> {
 }
 
 // Separate source set for Testcontainers suites: real Postgres, never H2.
-// `check` runs both; `test` stays fast and Docker-free (PORT.md section 8).
+// `check` runs both; `test` stays fast and Docker-free.
 sourceSets {
     create("integrationTest") {
         compileClasspath += sourceSets.main.get().output + configurations.testRuntimeClasspath.get()

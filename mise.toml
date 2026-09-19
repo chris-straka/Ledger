@@ -1,5 +1,7 @@
 [tools]
 # Local toolchain only. Postgres/Spring/Gradle pins live in
 # docker-compose.yaml, build.gradle.kts, and gradle/wrapper/ respectively
-# (PORT.md section 4: each pin lives in exactly one place).
+# (each pin lives in exactly one place).
 java = "25"
+# Needed by Spotless's prettier step for markdown (`spotlessCheck` runs in CI).
+node = "25"
