@@ -1,11 +1,8 @@
 # Ledger
 
-A double-entry ledger in **Java 25 + Spring Boot + Postgres**. Accounts hold balances. Money moves
+A double-entry ledger in **Java 25 + Spring Boot + Postgres**. 
+Balances are derived per account from entries. Money moves
 by *postings* — sets of entries that must sum to zero. Nothing is ever updated in place or deleted.
-
-**This repository is a duplicate of an unrelated .NET telemetry project, kept only for its Compose
-and observability scaffolding.** Read `PORT.md` first. Until the gut step in `PORT.md` is done,
-most of what is on disk is not this project and should be deleted, not maintained.
 
 The project is meant to be demonstrated and defended in an interview. Prefer a smaller claim the
 code can prove over a larger claim hidden behind comments.
@@ -23,8 +20,8 @@ This project *is* its invariants. Each one is a test, and none is optional.
 4. **No mixed currencies** within a posting, period. One currency per account, one per
    posting, enforced by composite foreign keys. Explicit FX postings are a post-V1 stretch
    goal, not a V1 exception.
-5. **Idempotency.** Replaying a posting with the same key creates no second set of entries and
-   returns the original.
+5. **Idempotency.** Replaying a posting with the same key creates no second set of entries and\
+   returns the original posting.
 6. **Concurrency.** N threads posting against one account produce a final balance exactly equal to
    the arithmetic sum. No lost updates.
 7. **Overdraft policy is explicit** per account — permitted or rejected, never accidental.
@@ -57,6 +54,11 @@ Explanatory comments are teaching material for the portfolio walkthrough. Preser
 when editing nearby code. If a comment is wrong, correct the fact rather than leaving it as
 archaeology. Rejected alternatives and longer trade-off discussions belong in `docs/DESIGN.md`.
 `TODO.md` contains only open work.
+
+## Working with Muse
+
+Commit+push is the usual: after making requested repo edits, commit and push the
+touched files to `main` without asking. Never leave changes uncommitted for review.
 
 ## Required checks
 
