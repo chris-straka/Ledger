@@ -12,11 +12,11 @@ code can prove over a larger claim hidden behind comments.
 This project *is* its invariants. Each one is a test, and none is optional.
 
 1. **Every posting balances.** Debits equal credits, per posting, per currency. Enforced in the
-   domain *and* by a database constraint so application code cannot bypass it.
+   domain *and* by a DB constraint so application code cannot bypass it.
 2. **Conservation.** Across the whole ledger, all entry amounts sum to exactly zero. Assert after
    every test, including concurrency and crash tests.
 3. **Immutability.** No `UPDATE` or `DELETE` on `entry` or `posting`, ever. Grants are revoked and
-   a test proves the database refuses.
+   a test proves the DB refuses.
 4. **No mixed currencies** within a posting, period. One currency per account, one per
    posting, enforced by composite foreign keys. Explicit FX postings are a post-V1 stretch
    goal, not a V1 exception.
@@ -36,7 +36,7 @@ This project *is* its invariants. Each one is a test, and none is optional.
 - Corrections are reversal postings. Never an edit.
 - State the isolation level explicitly and say which anomaly it prevents. Show the test that would
   fail at a weaker level.
-- Integration tests use Testcontainers with real Postgres. An in-memory database does not enforce
+- Integration tests use Testcontainers with real Postgres. An in-memory DB does not enforce
   the constraints that make invariants 1 and 3 true, so testing against one proves nothing.
 
 ## Non-goals

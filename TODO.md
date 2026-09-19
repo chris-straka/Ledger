@@ -1,6 +1,6 @@
 # Open work
 
-Reviewed 2026-09-04. Ledger rewrite backlog, ordered by PORT.md phases. This file is a
+Reviewed 2026-09-04. Ledger backlog, ordered by build phase. This file is a
 backlog, not a history of completed work.
 
 ## Phase 1 — Java skeleton and local loop (done)
@@ -13,7 +13,7 @@ backlog, not a history of completed work.
 - Gate passed: `spotlessCheck`, unit smoke test, `build`,
   `docker compose config --quiet`, real `up` with V1–V3 applied and readiness UP.
 
-## Phase 2 — Schema, roles, database defenses (done)
+## Phase 2 — Schema, roles, DB defenses (done)
 
 - Flyway V1 schema/keys/views/seeds, V2 runtime grants + immutable triggers,
   V3 deferred posting/overdraft/reversal validation.
@@ -44,14 +44,14 @@ backlog, not a history of completed work.
   template, full-jitter backoff, 503 after five attempts.
 - Deferred-trigger rejections translate to 409/422, never 500.
 - 23 unit + 58 integration tests green (incl. 20-way replay race);
-  live worked example matches PORT.md to the minor unit.
+  live worked example matches to the minor unit.
 
 ## Phase 5 — Overdraft and concurrency proof (done)
 
 - 50-thread exact-sum posting storm (client retries on 503 per contract),
   10-way different-payload key election, overdraft race rounds until a
   recorded serialization retry fires: one 201, one 409, final 2000.
-- REPEATABLE READ harness in a disposable database exhibits the write skew
+- REPEATABLE READ harness in a disposable DB exhibits the write skew
   (−6000 on DENY) that SERIALIZABLE prevents; trigger alone is insufficient.
 - 62 integration tests green with per-currency conservation after every test.
 
@@ -87,3 +87,20 @@ backlog, not a history of completed work.
   Extract only verified Postgres/observability/failure-testing reasoning into
   `docs/DESIGN.md` during Phase 8; delete the rest.
 - `resume.md` is user-owned; update ledger claims only after the proof passes.
+
+## Stretch goals (open — at most one at a time, each with its own invariant/test row)
+
+- Materialized balance projection, only after a benchmark proves derived reads are the
+  problem. Updated in the posting transaction with a standing equality proof; the journal
+  stays authoritative.
+- Transactional outbox: immutable event intent with the posting, at-least-once publish,
+  stable event IDs, crash/replay proof. Kafka enters here, never before.
+- Property-based state-machine tests (jqwik): posting sequences, reversals, replays, with
+  invariants audited after each committed step.
+- FX postings: two independently balanced currency legs joined by an exchange op, exact rate,
+  explicit rounding/residual account. Zero signed sum per currency; a rate never licenses
+  adding unlike minor units.
+- Historical statements/as-of balances: effective-time ordering, late/backdated events,
+  stable keyset pagination, performance evidence first.
+- Load testing with published hardware, data shape, concurrency, percentiles, and retry
+  rate. One laptop result is not a capacity claim.

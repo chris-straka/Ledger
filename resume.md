@@ -166,7 +166,7 @@ projects:
         text: "Enforce balanced postings in the domain (BigInteger sums) and with deferred Postgres constraint triggers, proven by raw-JDBC commit tests that bypass the application."
       - id: ledger-immutability
         track: swe
-        text: "Revoked UPDATE/DELETE/TRUNCATE from the runtime Postgres role and proved the database refuses mutations, with corrections modeled as exact reversal postings only."
+        text: "Revoked UPDATE/DELETE/TRUNCATE from the runtime Postgres role and proved the DB refuses mutations, with corrections modeled as exact reversal postings only."
       - id: ledger-currency
         track: swe
         text: "Restricted each posting to one currency via composite foreign keys, storing money as integer minor units with overflow-safe aggregation (no float/double in the money path)."
