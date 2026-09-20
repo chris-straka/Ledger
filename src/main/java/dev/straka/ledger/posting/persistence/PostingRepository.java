@@ -150,6 +150,7 @@ public class PostingRepository {
       AccountType type,
       dev.straka.ledger.account.domain.OverdraftPolicy overdraftPolicy) {}
 
+  /** Record describing a committed posting read back from the database, entries included. */
   public record StoredPosting(
       UUID id,
       String idempotencyKey,
@@ -162,6 +163,7 @@ public class PostingRepository {
       Instant recordedAt,
       List<StoredEntry> entries) {}
 
+  /** Record describing one committed entry row. */
   public record StoredEntry(
       int lineNumber,
       AccountId accountId,

@@ -27,8 +27,8 @@ import java.util.function.Function;
  */
 public record PostingDraft(CurrencyCode currency, List<PostingLine> lines) {
   /**
-   * Checks the class-level rules defined above. Totals are compared in {@link BigInteger} so sums
-   * near the {@code long} limit are still judged exactly.
+   * Checks the {@link PostingDraft} acceptance rules. Totals are compared in {@link BigInteger} so
+   * sums near the {@code long} limit are still judged exactly.
    *
    * @throws InvalidPostingException if any check fails
    */
