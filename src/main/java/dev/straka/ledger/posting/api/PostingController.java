@@ -45,8 +45,10 @@ public class PostingController {
                     new PostingService.PostingLineInput(
                         l.accountId(), l.side(), l.amountMinorUnits()))
             .toList();
+
     PostingOutcome outcome =
         postings.post(key, request.description().trim(), request.effectiveAt(), lines);
+
     UUID id =
         switch (outcome) {
           case PostingOutcome.Created created -> created.postingId();
