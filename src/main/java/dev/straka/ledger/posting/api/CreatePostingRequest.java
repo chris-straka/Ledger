@@ -15,7 +15,7 @@ import java.util.UUID;
 public record CreatePostingRequest(
     @NotBlank @Size(max = 500) String description,
     @NotNull Instant effectiveAt,
-    @Size(min = 2, max = 100) @Valid List<EntryLine> lines) {
+    @NotNull @Size(min = 2, max = 100) @Valid List<EntryLine> lines) {
   /**
    * One requested entry line: raw account ID, side, and base-10 amount, validated on the way in.
    */
