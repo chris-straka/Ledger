@@ -35,5 +35,8 @@ jobs:
         with:
           distribution: temurin
           java-version: 25
+      # Same fresh-checkout problem as compose validation: the harness sources .env.
+      - name: Crash-test environment
+        run: cp .env.example .env
       - name: Isolated SIGKILL harness
         run: ./scripts/crash-recovery.sh
