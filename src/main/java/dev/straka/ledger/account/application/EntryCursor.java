@@ -28,10 +28,12 @@ public record EntryCursor(Instant recordedAt, UUID postingId, int lineNumber) {
     } catch (IllegalArgumentException e) {
       throw new IllegalArgumentException("cursor is not base64url");
     }
+
     String[] parts = decoded.split("\\|", -1);
     if (parts.length != 3) {
       throw new IllegalArgumentException("cursor has wrong shape");
     }
+
     try {
       return new EntryCursor(
           Instant.parse(parts[0]), UUID.fromString(parts[1]), Integer.parseInt(parts[2]));

@@ -97,6 +97,7 @@ public class PostingService {
     String cleanDescription = cleanDescription(description);
     Instant cleanEffective = cleanEffectiveAt(effectiveAt);
     List<PostingLine> lines = toLines(inputs);
+
     // Currency is derived from accounts inside the transaction, never trusted
     // from the client — so it is not part of the compared body either.
     PostingFingerprint fingerprint =
@@ -147,6 +148,7 @@ public class PostingService {
     IdempotencyKey idempotencyKey = new IdempotencyKey(key);
     String cleanReason = cleanDescription(reason);
     Instant cleanEffective = cleanEffectiveAt(effectiveAt);
+
     PostingFingerprint fingerprint =
         PostingFingerprint.v1Reversal(targetId, cleanReason, cleanEffective);
     try {
@@ -211,6 +213,7 @@ public class PostingService {
           backoff(attempt);
           continue;
         }
+
         if (isSerializationFailure(e)) {
           attempts.exhausted();
           throw new PostingRetryExhaustedException(
@@ -238,10 +241,12 @@ public class PostingService {
     if (existing != null) {
       return compare(existing, fingerprint);
     }
+
     Map<AccountId, PostingRepository.ReferencedAccount> referenced = loadAccounts(lines);
     CurrencyCode currency = singleCurrency(referenced);
     PostingDraft draft = new PostingDraft(currency, lines);
     rejectOverdraft(draft, referenced);
+
     UUID id =
         postings.insertHeader(
             key,
@@ -280,6 +285,7 @@ public class PostingService {
     if (existing != null) {
       return compare(existing, fingerprint);
     }
+
     PostingRepository.StoredPosting original =
         postings
             .findById(targetId)
@@ -288,19 +294,23 @@ public class PostingService {
     if (original.kind() != PostingKind.STANDARD) {
       throw new ReversalConflictException("only standard postings can be reversed");
     }
+
     List<PostingLine> inverse = new ArrayList<>(original.entries().size());
     for (PostingRepository.StoredEntry entry : original.entries()) {
       EntrySide flipped = entry.side() == EntrySide.DEBIT ? EntrySide.CREDIT : EntrySide.DEBIT;
       inverse.add(
           new PostingLine(entry.accountId(), flipped, new EntryAmount(entry.amountMinor())));
     }
+
     Map<AccountId, PostingRepository.ReferencedAccount> referenced = loadAccounts(inverse);
     CurrencyCode currency = singleCurrency(referenced);
     if (!currency.equals(original.currency())) {
       throw new ReversalConflictException("original posting currency changed; cannot reverse");
     }
+
     PostingDraft draft = new PostingDraft(currency, inverse);
     rejectOverdraft(draft, referenced);
+
     UUID id =
         postings.insertHeader(
             key,
@@ -340,6 +350,7 @@ public class PostingService {
     for (PostingLine line : lines) {
       ids.add(line.accountId());
     }
+
     Map<AccountId, PostingRepository.ReferencedAccount> found = postings.accountsOf(ids);
     for (AccountId id : ids) {
       if (!found.containsKey(id)) {
@@ -355,6 +366,7 @@ public class PostingService {
     for (PostingRepository.ReferencedAccount account : referenced.values()) {
       codes.add(account.currency().code());
     }
+
     if (codes.size() != 1) {
       throw new InvalidPostingException("posting touches more than one currency: " + codes);
     }
@@ -367,6 +379,7 @@ public class PostingService {
     for (Map.Entry<AccountId, PostingRepository.ReferencedAccount> entry : referenced.entrySet()) {
       types.put(entry.getKey(), entry.getValue().type());
     }
+
     Map<AccountId, BigInteger> deltas = draft.deltasByAccount(types::get);
     for (Map.Entry<AccountId, BigInteger> delta : deltas.entrySet()) {
       if (referenced.get(delta.getKey()).overdraftPolicy() != OverdraftPolicy.DENY) {
@@ -392,6 +405,7 @@ public class PostingService {
     if (inputs == null) {
       throw new InvalidPostingException("entry lines are required");
     }
+
     List<PostingLine> lines = new ArrayList<>(inputs.size());
     for (PostingLineInput input : inputs) {
       if (input == null || input.accountId() == null) {
@@ -414,6 +428,7 @@ public class PostingService {
     if (description == null || description.isBlank() || description.length() > 500) {
       throw new InvalidPostingException("description must be 1-500 characters");
     }
+
     for (int i = 0; i < description.length(); i++) {
       char c = description.charAt(i);
       if (c <= 0x1F || c == 0x7F) {
@@ -427,6 +442,7 @@ public class PostingService {
     if (effectiveAt == null) {
       throw new InvalidPostingException("effectiveAt is required");
     }
+
     if (effectiveAt.isAfter(clock.instant().plus(MAX_FUTURE_EFFECTIVE))) {
       throw new InvalidPostingException("effectiveAt is more than five minutes in the future");
     }
@@ -437,6 +453,7 @@ public class PostingService {
     // Any link in the chain may carry the serialization state (batch and
     // transaction wrappers nest it), so every SQLException is inspected.
     Throwable cause = e;
+
     while (cause != null) {
       if (cause instanceof SQLException sql
           && ("40001".equals(sql.getSQLState()) || "40P01".equals(sql.getSQLState()))) {
@@ -449,6 +466,7 @@ public class PostingService {
 
   private static String sqlStateOf(DataAccessException e) {
     Throwable cause = e;
+
     while (cause != null) {
       if (cause instanceof SQLException sql && sql.getSQLState() != null) {
         return sql.getSQLState();
@@ -462,6 +480,7 @@ public class PostingService {
     if (!"23514".equals(sqlStateOf(e)) && !"23503".equals(sqlStateOf(e))) {
       return null;
     }
+
     String message = e.getMessage() == null ? "" : e.getMessage();
     if (message.contains("ledger_posting_overdraft")) {
       return new OverdraftRejectedException("posting overdraws a DENY account");
@@ -474,6 +493,7 @@ public class PostingService {
 
   private void backoff(int attempt) {
     long bound = Math.min(BACKOFF_CAP_MILLIS, BACKOFF_BASE_MILLIS * (1L << attempt));
+
     try {
       sleeper.sleep(ThreadLocalRandom.current().nextLong(bound + 1));
     } catch (InterruptedException e) {

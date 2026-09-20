@@ -65,6 +65,7 @@ public class PostingRepository {
 
   public void insertEntries(UUID postingId, CurrencyCode currency, List<PostingLine> lines) {
     List<Object[]> batch = new java.util.ArrayList<>();
+
     for (int i = 0; i < lines.size(); i++) {
       PostingLine line = lines.get(i);
       batch.add(
@@ -77,6 +78,7 @@ public class PostingRepository {
             line.amount().minorUnits()
           });
     }
+
     template.batchUpdate(
         "INSERT INTO ledger_entry (posting_id, line_number, account_id, currency_code, side,"
             + " amount_minor) VALUES (?, ?, ?, ?, ?, ?)",
@@ -106,6 +108,7 @@ public class PostingRepository {
             .param("id", id)
             .query(PostingRepository::mapEntry)
             .list();
+
     return jdbc.sql(
             """
             SELECT id, idempotency_key, posting_kind, reverses_posting_id, currency_code,
@@ -179,6 +182,7 @@ public class PostingRepository {
     if (ids.isEmpty()) {
       return Map.of();
     }
+
     List<UUID> raw = ids.stream().map(AccountId::value).toList();
     java.util.Map<AccountId, ReferencedAccount> found = new java.util.HashMap<>();
     jdbc.sql(

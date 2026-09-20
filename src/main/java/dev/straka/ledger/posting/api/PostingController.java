@@ -48,6 +48,7 @@ public class PostingController {
           case PostingOutcome.Created created -> created.postingId();
           case PostingOutcome.Replayed replayed -> replayed.postingId();
         };
+
     PostingResponse body = load(id);
     if (outcome instanceof PostingOutcome.Replayed) {
       return ResponseEntity.ok().header("Idempotency-Replayed", "true").body(body);
@@ -72,6 +73,7 @@ public class PostingController {
           case PostingOutcome.Created created -> created.postingId();
           case PostingOutcome.Replayed replayed -> replayed.postingId();
         };
+
     PostingResponse body = load(id);
     if (outcome instanceof PostingOutcome.Replayed) {
       return ResponseEntity.ok().header("Idempotency-Replayed", "true").body(body);

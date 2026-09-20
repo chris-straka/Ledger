@@ -93,6 +93,7 @@ public class AccountRepository {
     if (after != null) {
       sql += " AND (p.recorded_at, e.posting_id, e.line_number) > (:rec, :pid, :line)";
     }
+
     sql += " ORDER BY p.recorded_at, e.posting_id, e.line_number LIMIT :fetch";
     var query = jdbc.sql(sql).param("id", id.value()).param("fetch", fetch);
     if (after != null) {
@@ -102,6 +103,7 @@ public class AccountRepository {
               .param("pid", after.postingId())
               .param("line", after.lineNumber());
     }
+
     return query
         .query(
             (rs, n) ->
@@ -162,6 +164,7 @@ public class AccountRepository {
   private static RuntimeException translate(DataAccessException e, String code) {
     // SQLSTATE is read off java.sql.SQLException so main code never imports the driver.
     Throwable cause = e;
+
     while (cause != null) {
       if (cause instanceof SQLException sql && "23503".equals(sql.getSQLState())) {
         return new InvalidAccountException("unsupported currency for account: " + code);

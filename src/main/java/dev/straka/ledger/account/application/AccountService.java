@@ -39,6 +39,7 @@ public class AccountService {
 
   public EntryPage entries(AccountId id, String cursorRaw, String limitRaw) {
     accounts.requireById(id);
+
     AccountRepository.EntryCursorBean after = null;
     if (cursorRaw != null && !cursorRaw.isBlank()) {
       EntryCursor parsed = EntryCursor.parse(cursorRaw);
@@ -46,8 +47,10 @@ public class AccountService {
           new AccountRepository.EntryCursorBean(
               parsed.recordedAt(), parsed.postingId(), parsed.lineNumber());
     }
+
     int limit = parseLimit(limitRaw);
     List<AccountRepository.AccountEntry> rows = accounts.listEntries(id, after, limit + 1);
+
     List<EntryPage.Entry> page = new ArrayList<>();
     String nextCursor = null;
     for (int i = 0; i < Math.min(limit, rows.size()); i++) {

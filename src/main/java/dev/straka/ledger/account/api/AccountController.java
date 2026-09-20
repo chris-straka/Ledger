@@ -41,6 +41,7 @@ public class AccountController {
             request.currency(),
             request.type(),
             request.overdraftPolicy());
+
     return ResponseEntity.created(URI.create("/v1/accounts/" + account.id()))
         .body(AccountResponse.from(account));
   }

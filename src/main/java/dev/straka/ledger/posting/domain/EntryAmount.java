@@ -22,6 +22,7 @@ public record EntryAmount(long minorUnits) {
     if (raw == null || !PATTERN.matcher(raw).matches()) {
       throw new InvalidPostingException("amount must be a base-10 integer string: " + raw);
     }
+
     try {
       return new EntryAmount(Long.parseLong(raw));
     } catch (NumberFormatException e) {

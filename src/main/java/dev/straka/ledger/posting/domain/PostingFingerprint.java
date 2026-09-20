@@ -52,6 +52,7 @@ public record PostingFingerprint(byte[] sha256) {
       field(digest, description);
       field(digest, effectiveAt.toString());
       digest.update(ByteBuffer.allocate(4).putInt(lines.size()).array());
+
       for (PostingLine line : lines) {
         field(digest, line.accountId().toString());
         field(digest, line.side().name());
