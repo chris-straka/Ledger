@@ -9,5 +9,5 @@ import java.time.Instant;
  * Record carrying a reversal request: a reason and an effective time only. The server constructs
  * the inverse lines; clients cannot relabel an arbitrary posting as a reversal.
  */
-public record CreateReversalRequest(
+public record CreatePostingReversalRequest(
     @NotBlank @Size(max = 500) String reason, @NotNull Instant effectiveAt) {}

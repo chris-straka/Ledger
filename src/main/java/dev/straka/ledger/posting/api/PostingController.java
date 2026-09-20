@@ -68,7 +68,7 @@ public class PostingController {
   public ResponseEntity<PostingResponse> reverse(
       @PathVariable UUID postingId,
       @RequestHeader("Idempotency-Key") String key,
-      @Valid @RequestBody CreateReversalRequest request) {
+      @Valid @RequestBody CreatePostingReversalRequest request) {
     PostingOutcome outcome =
         postings.reverse(key, postingId, request.reason().trim(), request.effectiveAt());
     UUID id =
