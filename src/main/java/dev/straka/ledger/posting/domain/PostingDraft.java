@@ -13,26 +13,38 @@ import java.util.Set;
 import java.util.function.Function;
 
 /**
- * A validated, immutable posting draft. Construction enforces the full balance definition from
- * PORT.md section 2: 2–100 ordered lines, at least two distinct accounts, one currency, and a zero
- * signed journal sum (debits +, credits −) computed in {@link BigInteger} so totals that overflow
- * {@code long} addition are still judged exactly. The deferred database trigger re-proves all of
- * this at commit for writers that bypass Java.
+ * A validated, immutable posting draft: the all-or-nothing unit of the ledger.
+ *
+ * <p>A draft is accepted only when every line agrees:
+ *
+ * <ul>
+ *   <li>2–100 ordered lines, across at least two distinct accounts;
+ *   <li>one currency for the whole posting;
+ *   <li>debits equal credits, so the signed journal sum is zero.
+ * </ul>
+ *
+ * <p>The database re-proves the balance at commit for writers that bypass Java — see {@code
+ * docs/DESIGN.md} records 1 (signed journal arithmetic) and 5 (deferred constraint triggers).
  */
 public record PostingDraft(CurrencyCode currency, List<PostingLine> lines) {
+  /**
+   * Enforces the balance definition: non-null currency, 2–100 non-null lines, at least two distinct
+   * accounts, and equal debit/credit totals compared in {@link BigInteger} so sums near the {@code
+   * long} limit are still judged exactly.
+   *
+   * @throws InvalidPostingException if any check fails
+   */
   public PostingDraft {
-    if (currency == null) {
-      throw new InvalidPostingException("posting currency is required");
-    }
-    if (lines == null || lines.size() < 2 || lines.size() > 100) {
+    if (currency == null) throw new InvalidPostingException("posting currency is required");
+
+    if (lines == null || lines.size() < 2 || lines.size() > 100)
       throw new InvalidPostingException(
           "posting must declare 2-100 entry lines, got " + (lines == null ? 0 : lines.size()));
-    }
-    // Null elements are rejected here because List.copyOf would throw a bare NPE instead.
+
+    // Null elements are rejected here because List.copyOf would throw a bare NPE
+    // instead.
     for (PostingLine line : lines) {
-      if (line == null) {
-        throw new InvalidPostingException("posting lines must not be null");
-      }
+      if (line == null) throw new InvalidPostingException("posting lines must not be null");
     }
     lines = List.copyOf(lines);
     Set<AccountId> accounts = new HashSet<>();
