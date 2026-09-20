@@ -39,12 +39,13 @@ public record PostingDraft(CurrencyCode currency, List<PostingLine> lines) {
       throw new InvalidPostingException(
           "posting must declare 2-100 entry lines, got " + (lines == null ? 0 : lines.size()));
 
-    // Null elements are rejected here because List.copyOf would throw a bare NPE
-    // instead.
+    // Null elements are rejected here because List.copyOf would throw a bare NPE instead.
     for (PostingLine line : lines) {
       if (line == null) throw new InvalidPostingException("posting lines must not be null");
     }
+
     lines = List.copyOf(lines);
+
     Set<AccountId> accounts = new HashSet<>();
     BigInteger debits = BigInteger.ZERO;
     BigInteger credits = BigInteger.ZERO;
@@ -57,9 +58,11 @@ public record PostingDraft(CurrencyCode currency, List<PostingLine> lines) {
         credits = credits.add(amount);
       }
     }
+
     if (accounts.size() < 2) {
       throw new InvalidPostingException("posting must touch at least two distinct accounts");
     }
+
     if (!debits.equals(credits)) {
       throw new InvalidPostingException(
           "posting does not balance: debits " + debits + " != credits " + credits);
