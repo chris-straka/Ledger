@@ -18,9 +18,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Malformed requests fail here (HTTP 400); well-formed but invalid ones fall through to the domain
- * (HTTP 422). Each call runs inside {@link PostingService}'s transaction, and repeating a request
- * under the same idempotency key replays the original instead of posting twice.
+ * API handler for postings. Malformed requests fail here (HTTP 400); well-formed but invalid ones
+ * fall through to the domain (HTTP 422). Each call runs inside {@link PostingService}'s
+ * transaction, and repeating a request under the same idempotency key replays the original instead
+ * of posting twice.
  */
 @RestController
 @RequestMapping("/v1/postings")
