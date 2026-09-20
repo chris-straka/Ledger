@@ -2,7 +2,7 @@ package dev.straka.ledger.account.domain;
 
 import java.util.UUID;
 
-/** Identity of an immutable account. Never reused, never changed. */
+/** Record identifying an immutable account. Never reused, never changed. */
 public record AccountId(UUID value) {
   public AccountId {
     if (value == null) {

@@ -22,10 +22,10 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
 /**
- * Explicit SQL against the journal tables. Single statements are individually atomic, so this slice
- * needs no explicit transaction; the posting path (Phase 4) is where SERIALIZABLE multi-statement
- * transactions begin. Amounts leave the database as scale-zero text parsed into {@link BigInteger}
- * — never through {@code double}.
+ * Repository running explicit SQL against the journal tables. Single statements are individually
+ * atomic, so this slice needs no explicit transaction; the multi-statement posting path is where
+ * SERIALIZABLE transactions begin. Amounts leave the database as scale-zero text parsed into
+ * {@link BigInteger} — never through {@code double}.
  */
 @Repository
 public class AccountRepository {
@@ -70,8 +70,10 @@ public class AccountRepository {
         .optional();
   }
 
-  /** Current normal-side balance, derived from entries in one statement. Empty when missing. */
-  /** Current normal-side balance for the overdraft projection, in the caller's transaction. */
+  /**
+   * Current normal-side balance for the overdraft projection, derived from entries in one
+   * statement. Empty when the account is missing; runs in the caller's transaction.
+   */
   public Optional<BigInteger> balanceMinorOf(AccountId id) {
     return balanceOf(id).map(AccountBalance::balanceMinor);
   }

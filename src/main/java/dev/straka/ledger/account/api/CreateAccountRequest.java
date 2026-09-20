@@ -5,9 +5,9 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 /**
- * Transport shape only. Jakarta validation rejects malformed syntax (HTTP 400); well-formed but
- * invalid values — unknown type, unsupported currency — fall through to the domain and database,
- * which answer HTTP 422.
+ * Record carrying the create-account transport shape. Jakarta validation rejects malformed
+ * syntax (HTTP 400); well-formed but invalid values — unknown type, unsupported currency —
+ * fall through to the domain and database, which answer HTTP 422.
  */
 public record CreateAccountRequest(
     @NotBlank @Size(max = 64) String code,

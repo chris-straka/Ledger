@@ -10,12 +10,12 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Semantic fingerprint: versioned SHA-256 over a documented canonical tuple, so a retry after a
- * lost HTTP response is recognized as the same request while a different request under one key is a
- * conflict. Covered: algorithm version, operation kind, description, normalized instant, and
- * ordered normalized entry lines. Excluded: generated IDs, recordedAt, trace data, and
- * transport-only fields. JSON property order is irrelevant; entry line order is significant because
- * it becomes the immutable line_number.
+ * Record holding a semantic fingerprint: versioned SHA-256 over a documented canonical tuple,
+ * so a retry after a lost HTTP response is recognized as the same request while a different
+ * request under one key is a conflict. Covered: algorithm version, operation kind, description,
+ * normalized instant, and ordered normalized entry lines. Excluded: generated IDs, recordedAt,
+ * trace data, and transport-only fields. JSON property order is irrelevant; entry line order is
+ * significant because it becomes the immutable line_number.
  */
 public record PostingFingerprint(byte[] sha256) {
   public PostingFingerprint {

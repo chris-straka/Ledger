@@ -18,8 +18,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Thin by design: syntax validation, DTO translation, one use case, result mapping. The transaction
- * boundary lives in {@link PostingService}, never here.
+ * Controller, thin by design: syntax validation, DTO translation, one use case, result mapping.
+ * The transaction boundary lives in {@link PostingService}, never here.
  */
 @RestController
 @RequestMapping("/v1/postings")

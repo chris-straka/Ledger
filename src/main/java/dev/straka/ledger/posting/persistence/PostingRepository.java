@@ -20,9 +20,9 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
 /**
- * Explicit posting SQL. The header insert and the entry batch run inside the caller's SERIALIZABLE
- * transaction; this class never opens one. IDs and recordedAt stay database-generated, read back
- * through RETURNING.
+ * Repository running explicit posting SQL. The header insert and the entry batch run inside the
+ * caller's SERIALIZABLE transaction; this class never opens one. IDs and recordedAt stay
+ * database-generated, read back through RETURNING.
  */
 @Repository
 public class PostingRepository {
@@ -138,8 +138,10 @@ public class PostingRepository {
         rs.getLong("amount_minor"));
   }
 
+  /** Committed header behind an idempotency key: the posting ID plus the fingerprint replay checks compare against. */
   public record CommittedPosting(UUID id, PostingFingerprint fingerprint) {}
 
+  /** Account facts the posting path needs: currency, type, and overdraft policy. */
   public record ReferencedAccount(
       CurrencyCode currency,
       AccountType type,

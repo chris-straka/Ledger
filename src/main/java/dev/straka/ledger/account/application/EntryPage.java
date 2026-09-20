@@ -6,10 +6,11 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * One page of an account's journal lines with the cursor for the next page. The service maps
- * persistence rows here; the controller maps this to the transport shape.
+ * Record holding one page of an account's journal lines with the cursor for the next page. The
+ * service maps persistence rows here; the controller maps this to the transport shape.
  */
 public record EntryPage(List<Entry> entries, String nextCursor) {
+  /** One journal line, mapped from a persistence row. Amounts stay integer strings. */
   public record Entry(
       UUID postingId,
       int lineNumber,

@@ -18,8 +18,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Thin by design: validate syntax, translate DTOs, call one use case, map the result. There are no
- * update or delete routes — corrections are reversal postings, and accounts are immutable.
+ * Controller, thin by design: validate syntax, translate DTOs, call one use case, map the
+ * result. There are no update or delete routes — corrections are reversal postings, and accounts
+ * are immutable.
  */
 @RestController
 @RequestMapping("/v1/accounts")

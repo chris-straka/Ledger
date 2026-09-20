@@ -1,8 +1,8 @@
 package dev.straka.ledger.account.domain;
 
 /**
- * Account classification. The type fixes the account's normal side: an entry increases the reported
- * balance when its side matches the normal side and decreases it otherwise.
+ * Enum classifying accounts. The type fixes the account's normal side: an entry increases the
+ * reported balance when its side matches the normal side and decreases it otherwise.
  */
 public enum AccountType {
   ASSET,

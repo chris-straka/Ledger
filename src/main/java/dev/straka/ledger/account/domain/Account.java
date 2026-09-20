@@ -3,8 +3,8 @@ package dev.straka.ledger.account.domain;
 import java.time.Instant;
 
 /**
- * Immutable account. A new account starts at zero because it has no entries; opening value is a
- * posting against another account, never a stored balance field.
+ * Record describing an immutable account. A new account starts at zero because it has no entries;
+ * opening value is a posting against another account, never a stored balance field.
  */
 public record Account(
     AccountId id,

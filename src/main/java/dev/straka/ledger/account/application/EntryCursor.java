@@ -6,9 +6,10 @@ import java.util.Base64;
 import java.util.UUID;
 
 /**
- * Opaque keyset cursor over (recordedAt, postingId, lineNumber): the immutable order entries are
- * listed in. Encoded base64url so clients treat it as opaque; any tampering fails parsing and the
- * request is rejected as malformed rather than silently restarting the listing.
+ * Record holding an opaque keyset cursor over (recordedAt, postingId, lineNumber): the immutable
+ * order entries are listed in. Encoded base64url so clients treat it as opaque; any tampering
+ * fails parsing and the request is rejected as malformed rather than silently restarting the
+ * listing.
  */
 public record EntryCursor(Instant recordedAt, UUID postingId, int lineNumber) {
   public String encode() {
