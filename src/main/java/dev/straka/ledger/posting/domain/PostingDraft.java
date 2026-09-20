@@ -23,8 +23,8 @@ import java.util.function.Function;
  *   <li>debits equal credits, so the signed journal sum is zero.
  * </ul>
  *
- * <p>The database re-proves the balance at commit for writers that bypass Java — see {@code
- * docs/DESIGN.md} records 1 (signed journal arithmetic) and 5 (deferred constraint triggers).
+ * <p>Signed means debits count as + and credits as −. The database re-checks the zero sum at
+ * commit time, so writers that bypass Java cannot break it either.
  */
 public record PostingDraft(CurrencyCode currency, List<PostingLine> lines) {
   /**
