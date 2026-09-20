@@ -17,12 +17,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * API handler for postings. Malformed requests fail here (HTTP 400); well-formed but invalid ones
- * fall through to the domain (HTTP 422). Each call runs inside {@link PostingService}'s
- * transaction, and repeating a request under the same idempotency key replays the original instead
- * of posting twice.
- */
+/** API handler for postings. Each call runs inside {@link PostingService}'s transaction. */
 @RestController
 @RequestMapping("/v1/postings")
 public class PostingController {
@@ -35,6 +30,10 @@ public class PostingController {
     this.repository = repository;
   }
 
+  /**
+   * Malformed requests fail with HTTP 400; well-formed but invalid ones fall through to the domain
+   * as HTTP 422. A repeated idempotency key replays the original posting.
+   */
   @PostMapping
   public ResponseEntity<PostingResponse> post(
       @RequestHeader("Idempotency-Key") String key,
@@ -66,6 +65,10 @@ public class PostingController {
     return load(postingId);
   }
 
+  /**
+   * Same contract as {@link #post}: HTTP 400 for malformed requests, HTTP 422 from the domain, and
+   * replay under a repeated idempotency key.
+   */
   @PostMapping("/{postingId}/reversals")
   public ResponseEntity<PostingResponse> reverse(
       @PathVariable UUID postingId,
