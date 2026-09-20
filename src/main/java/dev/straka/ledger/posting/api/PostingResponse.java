@@ -19,7 +19,7 @@ public record PostingResponse(
     Instant recordedAt,
     List<EntryResponse> entries) {
   public record EntryResponse(
-      int lineNumber, String accountId, String currency, String side, String amountMinor) {}
+      int lineNumber, String accountId, String currency, String side, String amountMinorUnits) {}
 
   public static PostingResponse from(PostingRepository.StoredPosting posting) {
     return new PostingResponse(
@@ -39,7 +39,7 @@ public record PostingResponse(
                         e.accountId().toString(),
                         e.currency().code(),
                         e.side().name(),
-                        Long.toString(e.amountMinor())))
+                        Long.toString(e.amountMinorUnits())))
             .toList());
   }
 }

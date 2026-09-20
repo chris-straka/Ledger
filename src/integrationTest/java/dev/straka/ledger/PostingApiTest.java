@@ -91,7 +91,7 @@ class PostingApiTest extends LedgerIntegrationTest {
     Map<String, Object> line = new HashMap<>();
     line.put("accountId", account.toString());
     line.put("side", side);
-    line.put("amountMinor", amount);
+    line.put("amountMinorUnits", amount);
     return line;
   }
 

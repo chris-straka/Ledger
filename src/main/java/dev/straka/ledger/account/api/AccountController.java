@@ -74,7 +74,7 @@ public class AccountController {
                         e.postingId().toString(),
                         e.lineNumber(),
                         e.side(),
-                        e.amountMinor(),
+                        e.amountMinorUnits(),
                         e.currency(),
                         e.postingKind(),
                         e.description(),

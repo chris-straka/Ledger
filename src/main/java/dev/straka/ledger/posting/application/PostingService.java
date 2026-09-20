@@ -89,7 +89,7 @@ public class PostingService {
   /**
    * Record carrying transport-level input for one standard posting. Line order becomes line_number.
    */
-  public record PostingLineInput(UUID accountId, String side, String amountMinor) {}
+  public record PostingLineInput(UUID accountId, String side, String amountMinorUnits) {}
 
   public PostingOutcome post(
       String key, String description, Instant effectiveAt, List<PostingLineInput> inputs) {
@@ -299,7 +299,7 @@ public class PostingService {
     for (PostingRepository.StoredEntry entry : original.entries()) {
       EntrySide flipped = entry.side() == EntrySide.DEBIT ? EntrySide.CREDIT : EntrySide.DEBIT;
       inverse.add(
-          new PostingLine(entry.accountId(), flipped, new EntryAmount(entry.amountMinor())));
+          new PostingLine(entry.accountId(), flipped, new EntryAmount(entry.amountMinorUnits())));
     }
 
     Map<AccountId, PostingRepository.ReferencedAccount> referenced = loadAccounts(inverse);
@@ -419,7 +419,7 @@ public class PostingService {
       }
       lines.add(
           new PostingLine(
-              new AccountId(input.accountId()), side, EntryAmount.parse(input.amountMinor())));
+              new AccountId(input.accountId()), side, EntryAmount.parse(input.amountMinorUnits())));
     }
     return lines;
   }

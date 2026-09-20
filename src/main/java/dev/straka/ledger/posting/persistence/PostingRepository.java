@@ -172,7 +172,7 @@ public class PostingRepository {
       AccountId accountId,
       CurrencyCode currency,
       dev.straka.ledger.account.domain.EntrySide side,
-      long amountMinor) {}
+      long amountMinorUnits) {}
 
   /**
    * Account rows for the draft's currency and normal-side checks. Only existing rows return; the

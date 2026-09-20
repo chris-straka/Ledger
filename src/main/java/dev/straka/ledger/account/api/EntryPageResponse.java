@@ -13,7 +13,7 @@ public record EntryPageResponse(List<EntryResponse> entries, String nextCursor) 
       String postingId,
       int lineNumber,
       String side,
-      String amountMinor,
+      String amountMinorUnits,
       String currency,
       String postingKind,
       String description,

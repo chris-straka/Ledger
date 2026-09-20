@@ -43,7 +43,9 @@ class ImmutabilityTest extends LedgerIntegrationTest {
       SQLException failure =
           statementFailure(
               conn,
-              "UPDATE ledger_entry SET amount_minor = 1 WHERE posting_id = '" + posting + "'");
+              "UPDATE ledger_entry SET amount_minor_units = 1 WHERE posting_id = '"
+                  + posting
+                  + "'");
       assertTrue(failure != null, "UPDATE should have been refused");
       assertEquals("42501", failure.getSQLState());
       conn.rollback();

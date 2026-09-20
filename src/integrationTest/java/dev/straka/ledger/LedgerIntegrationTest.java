@@ -115,7 +115,7 @@ abstract class LedgerIntegrationTest {
     try (PreparedStatement ps =
         conn.prepareStatement(
             "INSERT INTO ledger_entry (posting_id, line_number, account_id, currency_code, side,"
-                + " amount_minor) VALUES (?, ?, ?, ?, ?, ?)")) {
+                + " amount_minor_units) VALUES (?, ?, ?, ?, ?, ?)")) {
       ps.setObject(1, postingId);
       ps.setInt(2, line);
       ps.setObject(3, accountId);

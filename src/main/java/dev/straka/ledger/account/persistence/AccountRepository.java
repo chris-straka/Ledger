@@ -123,7 +123,7 @@ public class AccountRepository {
       UUID postingId,
       int lineNumber,
       String side,
-      String amountMinor,
+      String amountMinorUnits,
       String currency,
       String postingKind,
       String description,

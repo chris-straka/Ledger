@@ -50,7 +50,7 @@ class PostingChecksTest extends LedgerIntegrationTest {
           statementFailure(
               conn,
               "INSERT INTO ledger_entry (posting_id, line_number, account_id, currency_code, side,"
-                  + " amount_minor) VALUES (?, 1, ?, 'CAD', 'DEBIT', ?)",
+                  + " amount_minor_units) VALUES (?, 1, ?, 'CAD', 'DEBIT', ?)",
               posting,
               cash,
               amount);
@@ -69,7 +69,7 @@ class PostingChecksTest extends LedgerIntegrationTest {
           statementFailure(
               conn,
               "INSERT INTO ledger_entry (posting_id, line_number, account_id, currency_code, side,"
-                  + " amount_minor) VALUES (?, 1, ?, 'CAD', 'DEBITX', 100)",
+                  + " amount_minor_units) VALUES (?, 1, ?, 'CAD', 'DEBITX', 100)",
               posting,
               cash);
       assertStatementFailsWith(failure, "ledger_entry_side_allowed");

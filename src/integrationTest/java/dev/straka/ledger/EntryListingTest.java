@@ -68,11 +68,11 @@ class EntryListingTest extends LedgerIntegrationTest {
     Map<String, Object> debit = new HashMap<>();
     debit.put("accountId", cash.toString());
     debit.put("side", "DEBIT");
-    debit.put("amountMinor", amount);
+    debit.put("amountMinorUnits", amount);
     Map<String, Object> credit = new HashMap<>();
     credit.put("accountId", capital.toString());
     credit.put("side", "CREDIT");
-    credit.put("amountMinor", amount);
+    credit.put("amountMinorUnits", amount);
     Map<String, Object> body = new HashMap<>();
     body.put("description", "funding " + key);
     body.put("effectiveAt", Instant.now().toString());
@@ -119,7 +119,7 @@ class EntryListingTest extends LedgerIntegrationTest {
       Map page = getPage(cash, query);
       List<Map> entries = (List<Map>) page.get("entries");
       for (Map entry : entries) {
-        amounts.add((String) entry.get("amountMinor"));
+        amounts.add((String) entry.get("amountMinorUnits"));
         kinds.add((String) entry.get("postingKind"));
         assertEquals("STANDARD", entry.get("postingKind"));
         assertEquals("DEBIT", entry.get("side"));
@@ -195,11 +195,11 @@ class EntryListingTest extends LedgerIntegrationTest {
     Map<String, Object> debit = new HashMap<>();
     debit.put("accountId", cash.toString());
     debit.put("side", "DEBIT");
-    debit.put("amountMinor", "400");
+    debit.put("amountMinorUnits", "400");
     Map<String, Object> credit = new HashMap<>();
     credit.put("accountId", capital.toString());
     credit.put("side", "CREDIT");
-    credit.put("amountMinor", "400");
+    credit.put("amountMinorUnits", "400");
     Map<String, Object> spend = new HashMap<>();
     spend.put("description", "spend " + tag);
     spend.put("effectiveAt", Instant.now().toString());

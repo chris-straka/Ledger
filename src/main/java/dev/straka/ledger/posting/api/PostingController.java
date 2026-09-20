@@ -39,7 +39,10 @@ public class PostingController {
       @Valid @RequestBody CreatePostingRequest request) {
     List<PostingService.PostingLineInput> lines =
         request.lines().stream()
-            .map(l -> new PostingService.PostingLineInput(l.accountId(), l.side(), l.amountMinor()))
+            .map(
+                l ->
+                    new PostingService.PostingLineInput(
+                        l.accountId(), l.side(), l.amountMinorUnits()))
             .toList();
     PostingOutcome outcome =
         postings.post(key, request.description().trim(), request.effectiveAt(), lines);

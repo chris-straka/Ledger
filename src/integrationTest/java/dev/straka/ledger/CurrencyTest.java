@@ -54,7 +54,7 @@ class CurrencyTest extends LedgerIntegrationTest {
           statementFailure(
               conn,
               "INSERT INTO ledger_entry (posting_id, line_number, account_id, currency_code, side,"
-                  + " amount_minor) VALUES (?, 1, ?, 'USD', 'DEBIT', 100)",
+                  + " amount_minor_units) VALUES (?, 1, ?, 'USD', 'DEBIT', 100)",
               posting,
               cash);
       assertTrue(failure != null, "expected statement to fail but it succeeded");
@@ -74,7 +74,7 @@ class CurrencyTest extends LedgerIntegrationTest {
           statementFailure(
               conn,
               "INSERT INTO ledger_entry (posting_id, line_number, account_id, currency_code, side,"
-                  + " amount_minor) VALUES (?, 1, ?, 'CAD', 'DEBIT', 100)",
+                  + " amount_minor_units) VALUES (?, 1, ?, 'CAD', 'DEBIT', 100)",
               posting,
               usdCash);
       assertTrue(failure != null, "expected statement to fail but it succeeded");
@@ -97,7 +97,7 @@ class CurrencyTest extends LedgerIntegrationTest {
           statementFailure(
               conn,
               "INSERT INTO ledger_entry (posting_id, line_number, account_id, currency_code, side,"
-                  + " amount_minor) VALUES (?, 2, ?, 'USD', 'CREDIT', 100)",
+                  + " amount_minor_units) VALUES (?, 2, ?, 'USD', 'CREDIT', 100)",
               posting,
               usdCapital);
       assertTrue(failure != null, "expected statement to fail but it succeeded");

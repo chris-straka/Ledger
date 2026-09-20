@@ -20,5 +20,5 @@ public record CreatePostingRequest(
    * One requested entry line: raw account ID, side, and base-10 amount, validated on the way in.
    */
   public record EntryLine(
-      @NotNull UUID accountId, @NotBlank String side, @NotBlank String amountMinor) {}
+      @NotNull UUID accountId, @NotBlank String side, @NotBlank String amountMinorUnits) {}
 }
