@@ -20,17 +20,16 @@ import java.util.function.Function;
  * <ul>
  *   <li>2–100 ordered lines, across at least two distinct accounts;
  *   <li>one currency for the whole posting;
- *   <li>debits equal credits, so the signed journal sum is zero.
+ *   <li>debits (+) equal credits (-), so the signed journal sum is zero.
  * </ul>
  *
- * <p>Signed means debits count as + and credits as −. The database re-checks the zero sum at
- * commit time, so writers that bypass Java cannot break it either.
+ * <p>DB re-checks zero sum at commit, so non-Java writers cannot break it either.
  */
 public record PostingDraft(CurrencyCode currency, List<PostingLine> lines) {
   /**
-   * Enforces the balance definition: non-null currency, 2–100 non-null lines, at least two distinct
-   * accounts, and equal debit/credit totals compared in {@link BigInteger} so sums near the {@code
-   * long} limit are still judged exactly.
+   * Checks the class-level rules defined above.
+   * Totals are compared in {@link BigInteger} so sums near the {@code long} limit are still
+   * judged exactly.
    *
    * @throws InvalidPostingException if any check fails
    */
