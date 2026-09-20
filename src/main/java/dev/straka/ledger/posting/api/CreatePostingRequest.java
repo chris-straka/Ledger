@@ -16,7 +16,9 @@ public record CreatePostingRequest(
     @NotBlank @Size(max = 500) String description,
     @NotNull Instant effectiveAt,
     @Size(min = 2, max = 100) @Valid List<EntryLine> lines) {
-  /** One requested entry line: raw account ID, side, and base-10 amount, validated on the way in. */
+  /**
+   * One requested entry line: raw account ID, side, and base-10 amount, validated on the way in.
+   */
   public record EntryLine(
       @NotNull UUID accountId, @NotBlank String side, @NotBlank String amountMinor) {}
 }

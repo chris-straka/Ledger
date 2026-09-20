@@ -3,7 +3,9 @@ package dev.straka.ledger.account.api;
 import dev.straka.ledger.account.domain.Account;
 import java.time.Instant;
 
-/** Record describing immutable account metadata. Balances never appear here; they are derived reads. */
+/**
+ * Record describing immutable account metadata. Balances never appear here; they are derived reads.
+ */
 public record AccountResponse(
     String accountId,
     String code,

@@ -4,7 +4,10 @@ import dev.straka.ledger.posting.persistence.PostingRepository;
 import java.time.Instant;
 import java.util.List;
 
-/** Record describing a committed posting with entries in immutable line order. Amounts are integer strings. */
+/**
+ * Record describing a committed posting with entries in immutable line order. Amounts are integer
+ * strings.
+ */
 public record PostingResponse(
     String postingId,
     String kind,

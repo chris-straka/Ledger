@@ -24,8 +24,8 @@ import org.springframework.stereotype.Repository;
 /**
  * Repository running explicit SQL against the journal tables. Single statements are individually
  * atomic, so this slice needs no explicit transaction; the multi-statement posting path is where
- * SERIALIZABLE transactions begin. Amounts leave the database as scale-zero text parsed into
- * {@link BigInteger} — never through {@code double}.
+ * SERIALIZABLE transactions begin. Amounts leave the database as scale-zero text parsed into {@link
+ * BigInteger} — never through {@code double}.
  */
 @Repository
 public class AccountRepository {

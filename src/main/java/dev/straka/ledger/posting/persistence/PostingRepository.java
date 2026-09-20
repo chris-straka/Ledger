@@ -138,7 +138,10 @@ public class PostingRepository {
         rs.getLong("amount_minor"));
   }
 
-  /** Committed header behind an idempotency key: the posting ID plus the fingerprint replay checks compare against. */
+  /**
+   * Committed header behind an idempotency key: the posting ID plus the fingerprint replay checks
+   * compare against.
+   */
   public record CommittedPosting(UUID id, PostingFingerprint fingerprint) {}
 
   /** Account facts the posting path needs: currency, type, and overdraft policy. */

@@ -13,9 +13,9 @@ import org.springframework.stereotype.Service;
 
 /**
  * Service hosting the account use cases. One controller call maps to one use case; transactions
- * would live here, but every operation below is a single atomic statement, so there is
- * deliberately no transaction boundary yet. The first TransactionTemplate appears with the
- * multi-statement posting path.
+ * would live here, but every operation below is a single atomic statement, so there is deliberately
+ * no transaction boundary yet. The first TransactionTemplate appears with the multi-statement
+ * posting path.
  */
 @Service
 public class AccountService {

@@ -86,7 +86,9 @@ public class PostingService {
     this.serializable.setIsolationLevel(TransactionDefinition.ISOLATION_SERIALIZABLE);
   }
 
-  /** Record carrying transport-level input for one standard posting. Line order becomes line_number. */
+  /**
+   * Record carrying transport-level input for one standard posting. Line order becomes line_number.
+   */
   public record PostingLineInput(UUID accountId, String side, String amountMinor) {}
 
   public PostingOutcome post(
