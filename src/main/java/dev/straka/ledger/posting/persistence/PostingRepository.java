@@ -81,7 +81,7 @@ public class PostingRepository {
 
     template.batchUpdate(
         "INSERT INTO ledger_entry (posting_id, line_number, account_id, currency_code, side,"
-            + " amount_minor) VALUES (?, ?, ?, ?, ?, ?)",
+            + " amount_minor_units) VALUES (?, ?, ?, ?, ?, ?)",
         batch);
   }
 
@@ -102,7 +102,7 @@ public class PostingRepository {
     List<StoredEntry> entries =
         jdbc.sql(
                 """
-                SELECT posting_id, line_number, account_id, currency_code, side, amount_minor
+                SELECT posting_id, line_number, account_id, currency_code, side, amount_minor_units
                 FROM ledger_entry WHERE posting_id = :id ORDER BY line_number
                 """)
             .param("id", id)
@@ -138,7 +138,7 @@ public class PostingRepository {
         new AccountId((UUID) rs.getObject("account_id")),
         new CurrencyCode(rs.getString("currency_code")),
         dev.straka.ledger.account.domain.EntrySide.valueOf(rs.getString("side")),
-        rs.getLong("amount_minor"));
+        rs.getLong("amount_minor_units"));
   }
 
   /**

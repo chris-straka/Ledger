@@ -85,7 +85,7 @@ public class AccountRepository {
   public List<AccountEntry> listEntries(AccountId id, EntryCursorBean after, int fetch) {
     String sql =
         """
-        SELECT e.posting_id, e.line_number, e.side, e.amount_minor, e.currency_code,
+        SELECT e.posting_id, e.line_number, e.side, e.amount_minor_units, e.currency_code,
             p.posting_kind, p.description, p.recorded_at
         FROM ledger_entry e JOIN ledger_posting p ON p.id = e.posting_id
         WHERE e.account_id = :id
@@ -111,7 +111,7 @@ public class AccountRepository {
                     (UUID) rs.getObject("posting_id"),
                     rs.getInt("line_number"),
                     rs.getString("side"),
-                    Long.toString(rs.getLong("amount_minor")),
+                    Long.toString(rs.getLong("amount_minor_units")),
                     rs.getString("currency_code"),
                     rs.getString("posting_kind"),
                     rs.getString("description"),
