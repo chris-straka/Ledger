@@ -57,8 +57,10 @@ archaeology. Rejected alternatives and longer trade-off discussions belong in `d
 
 ## Working with Muse
 
-Commit+push is the usual: after making requested repo edits, commit and push the
-touched files to `main` without asking. Never leave changes uncommitted for review.
+Commit+push is automatic, not a question: after making requested repo edits, commit and
+push the touched files to `main` immediately, every time, without asking first and without
+announcing the intent to ask. Never leave your own changes uncommitted for review. Only files
+you did not touch stay out: never sweep someone else's in-progress work into your commit.
 
 ## Required checks
 
