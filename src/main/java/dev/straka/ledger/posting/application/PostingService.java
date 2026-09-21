@@ -40,10 +40,11 @@ import org.springframework.transaction.support.TransactionTemplate;
 /**
  * Provides the posting use cases — standard postings and exact reversals — idempotent under
  * client-supplied keys. Each attempt runs in a fresh PostgreSQL {@code SERIALIZABLE} transaction
- * created by the {@link TransactionTemplate} below — never a private self-invoked
- * {@code @Transactional}, never in a controller, and never retried inside an aborted transaction.
- * The retry loop lives outside the template and re-runs the complete decision, because PostgreSQL
- * requires retrying everything that decided which writes to issue.
+ * created by the {@link TransactionTemplate} below. The template is explicit so a self-call
+ * cannot silently bypass the proxy the way a private self-invoked {@code @Transactional} would,
+ * and so a retry starts a new transaction instead of reusing an aborted one. The retry loop
+ * lives outside the template and re-runs the full check-then-insert — the balance read plus
+ * the entry writes — because an aborted transaction cannot be reused.
  *
  * <p>Why SERIALIZABLE: the anomaly is overdraft write skew. Two transactions read a 10,000 balance,
  * each approves an 8,000 withdrawal through disjoint row inserts, and both commit at REPEATABLE
