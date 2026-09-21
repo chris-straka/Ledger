@@ -11,9 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.springframework.stereotype.Service;
 
-/**
- * No transaction boundary here: every operation below is a single atomic statement.
- */
+/** No transaction boundary here: every operation below is a single atomic statement. */
 @Service
 public class AccountService {
 
