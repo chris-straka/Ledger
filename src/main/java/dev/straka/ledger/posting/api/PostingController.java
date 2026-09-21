@@ -56,9 +56,10 @@ public class PostingController {
         };
 
     PostingResponse body = load(id);
-    if (outcome instanceof PostingOutcome.Replayed) {
+
+    if (outcome instanceof PostingOutcome.Replayed)
       return ResponseEntity.ok().header("Idempotency-Replayed", "true").body(body);
-    }
+
     return ResponseEntity.created(URI.create("/v1/postings/" + id)).body(body);
   }
 
@@ -67,10 +68,6 @@ public class PostingController {
     return load(postingId);
   }
 
-  /**
-   * Same contract as {@link #post}: HTTP 400 for malformed requests, HTTP 422 from the domain, and
-   * replay under a repeated idempotency key.
-   */
   @PostMapping("/{postingId}/reversals")
   public ResponseEntity<PostingResponse> reverse(
       @PathVariable UUID postingId,
@@ -85,9 +82,9 @@ public class PostingController {
         };
 
     PostingResponse body = load(id);
-    if (outcome instanceof PostingOutcome.Replayed) {
+    if (outcome instanceof PostingOutcome.Replayed)
       return ResponseEntity.ok().header("Idempotency-Replayed", "true").body(body);
-    }
+
     return ResponseEntity.created(URI.create("/v1/postings/" + id)).body(body);
   }
 
