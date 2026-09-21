@@ -40,6 +40,12 @@ Thumbs.db
 .vscode/
 *.lscache
 
+# Eclipse JDT language server (jdtls) project files and output
+.classpath
+.project
+.settings/
+bin/
+
 # Environment variables (user-owned local state, never committed)
 .env
 .env.*
