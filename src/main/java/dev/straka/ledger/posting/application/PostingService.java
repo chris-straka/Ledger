@@ -38,14 +38,15 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
 /**
- * Provides the posting use cases — standard postings and exact reversals — idempotent under
- * client-supplied keys. Each attempt runs in a fresh PostgreSQL {@code SERIALIZABLE} transaction
- * created by the {@link TransactionTemplate} below. The template keeps the boundary visible:
- * a self-call cannot skip it the way a private self-invoked {@code @Transactional} can.
- * On retry, {@link #runSerializable} starts a new transaction and runs {@link #attemptPost}
- * again from the start — the balance check ({@code rejectOverdraft}) plus the inserts
- * ({@code insertHeader}, {@code insertEntries}) — because an aborted transaction cannot
- * be continued.
+ * Provides the posting use cases (hexagonal architecture) —> standard postings and reversals.
+ * They're idempotent under client-supplied keys. Each attempt runs in a fresh PostgreSQL {@code
+ * SERIALIZABLE} transaction created by the {@link TransactionTemplate} below.
+ *
+ * <p>The template keeps the boundary (BEGIN -> COMMIT) visible: a self-call cannot skip it the way
+ * a private self-invoked {@code @Transactional} can. On retry, {@link #runSerializable} starts a
+ * new transaction and runs {@link #attemptPost} again from the start — the balance check ({@code
+ * rejectOverdraft}) plus the inserts ({@code insertHeader}, {@code insertEntries}) — because an
+ * aborted transaction cannot be continued.
  *
  * <p>Why SERIALIZABLE: the anomaly is overdraft write skew. Two transactions read a 10,000 balance,
  * each approves an 8,000 withdrawal through disjoint row inserts, and both commit at REPEATABLE
@@ -241,10 +242,10 @@ public class PostingService {
       String description,
       Instant effectiveAt,
       List<PostingEntry> entries) {
+
     PostingRepository.CommittedPosting existing = postings.findByKey(key).orElse(null);
-    if (existing != null) {
-      return compare(existing, fingerprint);
-    }
+
+    if (existing != null) return compare(existing, fingerprint);
 
     Map<AccountId, PostingRepository.ReferencedAccount> referenced = loadAccounts(entries);
     CurrencyCode currency = singleCurrency(referenced);
@@ -261,6 +262,7 @@ public class PostingService {
             entries.size(),
             description,
             effectiveAt);
+
     postings.insertEntries(id, currency, entries);
     // Crash window one: header plus entries are inserted, the transaction is still
     // open. A SIGKILL here must leave neither row behind.
@@ -271,11 +273,13 @@ public class PostingService {
 
   private PostingOutcome resolveIdempotencyRace(
       IdempotencyKey key, PostingFingerprint fingerprint) {
+
     PostingRepository.CommittedPosting winner =
         postings
             .findByKey(key)
             .orElseThrow(
                 () -> new PostingRetryExhaustedException("idempotency winner vanished; retry"));
+
     return compare(winner, fingerprint);
   }
 
@@ -285,19 +289,19 @@ public class PostingService {
       UUID targetId,
       String reason,
       Instant effectiveAt) {
+
     PostingRepository.CommittedPosting existing = postings.findByKey(key).orElse(null);
-    if (existing != null) {
-      return compare(existing, fingerprint);
-    }
+
+    if (existing != null) return compare(existing, fingerprint);
 
     PostingRepository.StoredPosting original =
         postings
             .findById(targetId)
             .orElseThrow(
                 () -> new PostingNotFoundException("original posting not found: " + targetId));
-    if (original.kind() != PostingKind.STANDARD) {
+
+    if (original.kind() != PostingKind.STANDARD)
       throw new ReversalConflictException("only standard postings can be reversed");
-    }
 
     List<PostingEntry> inverse = new ArrayList<>(original.entries().size());
     for (PostingRepository.StoredEntry entry : original.entries()) {
@@ -308,9 +312,8 @@ public class PostingService {
 
     Map<AccountId, PostingRepository.ReferencedAccount> referenced = loadAccounts(inverse);
     CurrencyCode currency = singleCurrency(referenced);
-    if (!currency.equals(original.currency())) {
+    if (!currency.equals(original.currency()))
       throw new ReversalConflictException("original posting currency changed; cannot reverse");
-    }
 
     PostingDraft draft = new PostingDraft(currency, inverse);
     rejectOverdraft(draft, referenced);
@@ -334,32 +337,27 @@ public class PostingService {
     // A unique violation here is either our key (replay/conflict) or the target's
     // single-reversal slot (already reversed). The key lookup tells them apart.
     PostingRepository.CommittedPosting winner = postings.findByKey(key).orElse(null);
-    if (winner != null) {
-      return compare(winner, fingerprint);
-    }
+    if (winner != null) return compare(winner, fingerprint);
+
     throw new ReversalConflictException("original posting is already reversed");
   }
 
   private static PostingOutcome compare(
       PostingRepository.CommittedPosting committed, PostingFingerprint fingerprint) {
-    if (committed.fingerprint().equals(fingerprint)) {
+    if (committed.fingerprint().equals(fingerprint))
       return new PostingOutcome.Replayed(committed.id());
-    }
+
     throw new IdempotencyConflictException("idempotency key already used by a different request");
   }
 
   private Map<AccountId, PostingRepository.ReferencedAccount> loadAccounts(
       List<PostingEntry> entries) {
     Set<AccountId> ids = new HashSet<>();
-    for (PostingEntry entry : entries) {
-      ids.add(entry.accountId());
-    }
+    for (PostingEntry entry : entries) ids.add(entry.accountId());
 
     Map<AccountId, PostingRepository.ReferencedAccount> found = postings.accountsOf(ids);
     for (AccountId id : ids) {
-      if (!found.containsKey(id)) {
-        throw new AccountNotFoundException("account not found: " + id);
-      }
+      if (!found.containsKey(id)) throw new AccountNotFoundException("account not found: " + id);
     }
     return found;
   }
@@ -371,29 +369,28 @@ public class PostingService {
       codes.add(account.currency().code());
     }
 
-    if (codes.size() != 1) {
+    if (codes.size() != 1)
       throw new InvalidPostingException("posting touches more than one currency: " + codes);
-    }
+
     return new CurrencyCode(codes.iterator().next());
   }
 
   private void rejectOverdraft(
       PostingDraft draft, Map<AccountId, PostingRepository.ReferencedAccount> referenced) {
+
     Map<AccountId, AccountType> types = new HashMap<>();
-    for (Map.Entry<AccountId, PostingRepository.ReferencedAccount> entry : referenced.entrySet()) {
+
+    for (Map.Entry<AccountId, PostingRepository.ReferencedAccount> entry : referenced.entrySet())
       types.put(entry.getKey(), entry.getValue().type());
-    }
 
     Map<AccountId, BigInteger> deltas = draft.deltasByAccount(types::get);
     for (Map.Entry<AccountId, BigInteger> delta : deltas.entrySet()) {
-      if (referenced.get(delta.getKey()).overdraftPolicy() != OverdraftPolicy.DENY) {
-        continue;
-      }
+      if (referenced.get(delta.getKey()).overdraftPolicy() != OverdraftPolicy.DENY) continue;
+
       BigInteger current = currentBalance(delta.getKey(), accounts);
-      if (current.add(delta.getValue()).signum() < 0) {
+      if (current.add(delta.getValue()).signum() < 0)
         throw new OverdraftRejectedException(
             "posting overdraws account " + delta.getKey() + " (balance " + current + ")");
-      }
     }
   }
 
@@ -406,15 +403,13 @@ public class PostingService {
   }
 
   private static List<PostingEntry> toLines(List<PostingEntryInput> inputs) {
-    if (inputs == null) {
-      throw new InvalidPostingException("entry entries are required");
-    }
+    if (inputs == null) throw new InvalidPostingException("entry entries are required");
 
     List<PostingEntry> entries = new ArrayList<>(inputs.size());
     for (PostingEntryInput input : inputs) {
-      if (input == null || input.accountId() == null) {
+      if (input == null || input.accountId() == null)
         throw new InvalidPostingException("entry account is required");
-      }
+
       EntrySide side;
       try {
         side = EntrySide.valueOf(input.side());
@@ -429,27 +424,23 @@ public class PostingService {
   }
 
   private static String cleanDescription(String description) {
-    if (description == null || description.isBlank() || description.length() > 500) {
+    if (description == null || description.isBlank() || description.length() > 500)
       throw new InvalidPostingException("description must be 1-500 characters");
-    }
 
     for (int i = 0; i < description.length(); i++) {
       char c = description.charAt(i);
-      if (c <= 0x1F || c == 0x7F) {
+      if (c <= 0x1F || c == 0x7F)
         throw new InvalidPostingException("description must not contain control characters");
-      }
     }
     return description;
   }
 
   private Instant cleanEffectiveAt(Instant effectiveAt) {
-    if (effectiveAt == null) {
-      throw new InvalidPostingException("effectiveAt is required");
-    }
+    if (effectiveAt == null) throw new InvalidPostingException("effectiveAt is required");
 
-    if (effectiveAt.isAfter(clock.instant().plus(MAX_FUTURE_EFFECTIVE))) {
+    if (effectiveAt.isAfter(clock.instant().plus(MAX_FUTURE_EFFECTIVE)))
       throw new InvalidPostingException("effectiveAt is more than five minutes in the future");
-    }
+
     return effectiveAt;
   }
 
@@ -460,11 +451,11 @@ public class PostingService {
 
     while (cause != null) {
       if (cause instanceof SQLException sql
-          && ("40001".equals(sql.getSQLState()) || "40P01".equals(sql.getSQLState()))) {
-        return true;
-      }
+          && ("40001".equals(sql.getSQLState()) || "40P01".equals(sql.getSQLState()))) return true;
+
       cause = cause.getCause();
     }
+
     return false;
   }
 
@@ -472,26 +463,23 @@ public class PostingService {
     Throwable cause = e;
 
     while (cause != null) {
-      if (cause instanceof SQLException sql && sql.getSQLState() != null) {
-        return sql.getSQLState();
-      }
+      if (cause instanceof SQLException sql && sql.getSQLState() != null) return sql.getSQLState();
+
       cause = cause.getCause();
     }
     return "";
   }
 
   private static RuntimeException translateTriggerRejection(DataAccessException e) {
-    if (!"23514".equals(sqlStateOf(e)) && !"23503".equals(sqlStateOf(e))) {
-      return null;
-    }
+    if (!"23514".equals(sqlStateOf(e)) && !"23503".equals(sqlStateOf(e))) return null;
 
     String message = e.getMessage() == null ? "" : e.getMessage();
-    if (message.contains("ledger_posting_overdraft")) {
+    if (message.contains("ledger_posting_overdraft"))
       return new OverdraftRejectedException("posting overdraws a DENY account");
-    }
-    if (message.contains("ledger_")) {
+
+    if (message.contains("ledger_"))
       return new InvalidPostingException("posting rejected by ledger constraints at commit");
-    }
+
     return null;
   }
 

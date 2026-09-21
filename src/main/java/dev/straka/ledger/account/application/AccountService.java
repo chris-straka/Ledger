@@ -36,6 +36,7 @@ public class AccountService {
     accounts.requireById(id);
 
     AccountRepository.EntryCursorBean after = null;
+
     if (cursorRaw != null && !cursorRaw.isBlank()) {
       EntryCursor parsed = EntryCursor.parse(cursorRaw);
       after =

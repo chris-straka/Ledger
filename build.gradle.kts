@@ -49,6 +49,9 @@ tasks.withType<Test> {
 // One formatter per language, both via Spotless (runs in `check` and CI).
 // Pinned: Spotless's default GJF calls a javac internal removed in JDK 25
 // (NoSuchMethodError on DeferredDiagnosticHandler); 1.28.0 works on JDK 17-25.
+// Newer GJF (tried 1.36.1) fails the same way on JDK 25, so the mason
+// google-java-format used by conform.nvim on save must stay in sync by hand:
+// if save-formatting and spotlessCheck disagree, spotlessApply wins.
 spotless {
     java {
         googleJavaFormat("1.28.0")

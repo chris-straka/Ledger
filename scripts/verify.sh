@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Non-empty integrity audit (PORT.md acceptance). Checks the ledger reachable
+# Non-empty integrity audit. Checks the ledger reachable
 # at 127.0.0.1:5432 as the runtime role: posting closure on every posting,
 # per-currency conservation at zero, and proof the database is not empty.
 # Exits nonzero on any violation — pretty output is secondary to assertions.

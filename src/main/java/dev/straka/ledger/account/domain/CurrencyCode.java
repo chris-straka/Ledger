@@ -13,8 +13,7 @@ public record CurrencyCode(String code) {
   private static final Pattern PATTERN = Pattern.compile(REGEX);
 
   public CurrencyCode {
-    if (code == null || !PATTERN.matcher(code).matches()) {
+    if (code == null || !PATTERN.matcher(code).matches())
       throw new InvalidAccountException("currency code must be three uppercase letters: " + code);
-    }
   }
 }
