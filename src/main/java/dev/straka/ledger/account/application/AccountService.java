@@ -24,7 +24,7 @@ public class AccountService {
   }
 
   public Account create(String code, String name, String currency, String type, String policy) {
-    AccountType accountType = parseType(type);
+    AccountType accountType = parseAccountType(type);
     OverdraftPolicy overdraft = parseOverdraftPolicy(policy);
     CurrencyCode currencyCode = new CurrencyCode(currency);
     return accounts.create(code, name, currencyCode, accountType, overdraft);
@@ -83,7 +83,7 @@ public class AccountService {
         .orElseThrow(() -> new AccountNotFoundException("account not found: " + id));
   }
 
-  private static AccountType parseType(String raw) {
+  private static AccountType parseAccountType(String raw) {
     try {
       return AccountType.valueOf(raw);
     } catch (IllegalArgumentException | NullPointerException e) {
