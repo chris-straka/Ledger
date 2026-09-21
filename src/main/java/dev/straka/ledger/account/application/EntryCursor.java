@@ -12,27 +12,24 @@ import java.util.UUID;
  */
 public record EntryCursor(Instant recordedAt, UUID postingId, int entryNumber) {
   public String encode() {
-    String raw = recordedAt.toString() + "|" + postingId + "|" + entryNumber;
+    String plain = recordedAt.toString() + "|" + postingId + "|" + entryNumber;
     return Base64.getUrlEncoder()
         .withoutPadding()
-        .encodeToString(raw.getBytes(StandardCharsets.UTF_8));
+        .encodeToString(plain.getBytes(StandardCharsets.UTF_8));
   }
 
-  public static EntryCursor parse(String raw) {
-    if (raw == null || raw.isBlank()) {
-      throw new IllegalArgumentException("cursor is blank");
-    }
+  public static EntryCursor parse(String encoded) {
+    if (encoded == null || encoded.isBlank()) throw new IllegalArgumentException("Cursor is blank");
+
     String decoded;
     try {
-      decoded = new String(Base64.getUrlDecoder().decode(raw), StandardCharsets.UTF_8);
+      decoded = new String(Base64.getUrlDecoder().decode(encoded), StandardCharsets.UTF_8);
     } catch (IllegalArgumentException e) {
       throw new IllegalArgumentException("cursor is not base64url");
     }
 
     String[] parts = decoded.split("\\|", -1);
-    if (parts.length != 3) {
-      throw new IllegalArgumentException("cursor has wrong shape");
-    }
+    if (parts.length != 3) throw new IllegalArgumentException("cursor has wrong shape");
 
     try {
       return new EntryCursor(
