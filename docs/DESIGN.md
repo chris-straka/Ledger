@@ -113,8 +113,31 @@ overdraft policy still applies, so spent history can refuse to be undone.
 
 Each would add an invariant the project cannot yet prove (rounding policy, delivery semantics,
 authorization correctness, multi-node truth, legal claims). The README non-goals say so plainly,
-and the only sanctioned re-entry is the stretch list in PORT.md section 14 — one at a time, each
+and the only sanctioned re-entry is the stretch list in TODO.md — one at a time, each
 with its own invariant/test row.
 
 - Rejected: breadth that the code cannot defend in an interview.
 - Proof: `README.md` non-goals; `AGENTS.md` contract; this file's silence on all five.
+
+## 11. One entries table for all accounts
+
+Tables define kinds, not owners: accounts, postings, and entries each get one table, and a new
+account arrives as a row, never as DDL. A per-account (or per-currency) split would turn account
+creation into schema migration, scatter the conservation sum across N tables, and duplicate
+every constraint once per table.
+
+- Rejected: per-account/per-currency entry tables (see also 3 for the balances-table version
+  of the same second-source-of-truth mistake).
+- Proof: `V1__journal_schema.sql` (three journal tables); `v_conservation` sums one table.
+
+## 12. Hexagonal package layout: use cases in application, rules in domain, adapters at the edges
+
+Each area is split four ways: `api` (HTTP in), `application` (use-case orchestration:
+transactions, idempotency, retries), `domain` (rules, framework-free), `persistence` (JDBC out).
+Controllers and repositories translate; all decisions live in `application` plus `domain`.
+
+- Rejected: layer-by-kind packages (`controllers`, `services`, `repositories`) that scatter one
+  feature across three directories, and framework types leaking into `domain`.
+- Proof: `PostingService` (orchestration) vs. `PostingDraft` (rules); `DomainIsolationTest`
+  (domain has no Spring, JDBC, or validation); no framework stereotype inside any `domain`
+  package.
