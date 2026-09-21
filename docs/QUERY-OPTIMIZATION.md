@@ -31,7 +31,7 @@ before citing these numbers anywhere; they prove index usage, not scale.
 | Replay dedup across key rotation          | `request_fingerprint bytea` + sha256 length check + `fingerprint_version`                          | V1:55-58          |
 | One reversal per posting max              | `reverses_posting_id uuid UNIQUE` — the schema refuses double-reversal                             | V1:61             |
 | Single-currency enforcement without joins | Composite `UNIQUE (id, currency_code)` + composite FKs on entries                                  | V1:43, 73, 96, 99 |
-| Entry append ordering                     | `UNIQUE (posting_id, line_number)`                                                                 | V1:94             |
+| Entry append ordering                     | `UNIQUE (posting_id, entry_number)`                                                                | V1:94             |
 | Time-ordered UUIDs                        | `uuidv7()` PK defaults cluster recent rows                                                         | V1:30, 51, 84     |
 
 ## Deliberate sparsity

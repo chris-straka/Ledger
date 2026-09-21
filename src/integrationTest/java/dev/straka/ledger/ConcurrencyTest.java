@@ -106,20 +106,20 @@ class ConcurrencyTest extends LedgerIntegrationTest {
     return UUID.fromString((String) response.getBody().get("accountId"));
   }
 
-  private static Map<String, Object> line(UUID account, String side, String amount) {
-    Map<String, Object> line = new HashMap<>();
-    line.put("accountId", account.toString());
-    line.put("side", side);
-    line.put("amountMinorUnits", amount);
-    return line;
+  private static Map<String, Object> entry(UUID account, String side, String amount) {
+    Map<String, Object> entry = new HashMap<>();
+    entry.put("accountId", account.toString());
+    entry.put("side", side);
+    entry.put("amountMinorUnits", amount);
+    return entry;
   }
 
   private static Map<String, Object> postingBody(
-      String description, List<Map<String, Object>> lines) {
+      String description, List<Map<String, Object>> entries) {
     Map<String, Object> body = new HashMap<>();
     body.put("description", description);
     body.put("effectiveAt", Instant.now().toString());
-    body.put("lines", lines);
+    body.put("entries", entries);
     return body;
   }
 
@@ -153,7 +153,7 @@ class ConcurrencyTest extends LedgerIntegrationTest {
                         "sum-" + tag + "-" + n,
                         postingBody(
                             "credit " + n,
-                            List.of(line(cash, "DEBIT", "100"), line(capital, "CREDIT", "100"))));
+                            List.of(entry(cash, "DEBIT", "100"), entry(capital, "CREDIT", "100"))));
                 return response.getStatusCode().value();
               }));
     }
@@ -193,7 +193,7 @@ class ConcurrencyTest extends LedgerIntegrationTest {
                         key,
                         postingBody(
                             "variant " + n,
-                            List.of(line(cash, "DEBIT", "100"), line(capital, "CREDIT", "100"))));
+                            List.of(entry(cash, "DEBIT", "100"), entry(capital, "CREDIT", "100"))));
                 return response.getStatusCode().value();
               }));
     }
@@ -239,7 +239,7 @@ class ConcurrencyTest extends LedgerIntegrationTest {
     postPosting(
         "fund-" + tag,
         postingBody(
-            "funding", List.of(line(cash, "DEBIT", "10000"), line(capital, "CREDIT", "10000"))));
+            "funding", List.of(entry(cash, "DEBIT", "10000"), entry(capital, "CREDIT", "10000"))));
 
     ExecutorService pool = Executors.newFixedThreadPool(2);
     CountDownLatch start = new CountDownLatch(1);
@@ -251,7 +251,7 @@ class ConcurrencyTest extends LedgerIntegrationTest {
                       "race-" + tag + "-a",
                       postingBody(
                           "withdrawal a",
-                          List.of(line(capital, "DEBIT", "8000"), line(cash, "CREDIT", "8000"))))
+                          List.of(entry(capital, "DEBIT", "8000"), entry(cash, "CREDIT", "8000"))))
                   .getStatusCode()
                   .value();
             });
@@ -263,7 +263,7 @@ class ConcurrencyTest extends LedgerIntegrationTest {
                       "race-" + tag + "-b",
                       postingBody(
                           "withdrawal b",
-                          List.of(line(capital, "DEBIT", "8000"), line(cash, "CREDIT", "8000"))))
+                          List.of(entry(capital, "DEBIT", "8000"), entry(cash, "CREDIT", "8000"))))
                   .getStatusCode()
                   .value();
             });

@@ -65,10 +65,10 @@ mkaccount() { # code name type
   python3 -c "import json; print(json.load(open('/tmp/demo.json'))['accountId'])"
 }
 
-mkposting() { # key description lines-json -> prints "status postingId"
+mkposting() { # key description entries-json -> prints "status postingId"
   STATUS=$(curl -s -o /tmp/demo.json -w "%{http_code}" -X POST "$API/v1/postings" \
     -H 'Content-Type: application/json' -H "Idempotency-Key: $1" \
-    -d "{\"description\":\"$2\",\"effectiveAt\":\"2026-09-04T12:00:00Z\",\"lines\":$3}")
+    -d "{\"description\":\"$2\",\"effectiveAt\":\"2026-09-04T12:00:00Z\",\"entries\":$3}")
   ID=$(python3 -c "import json; print(json.load(open('/tmp/demo.json')).get('postingId',''))")
   echo "$STATUS $ID"
 }
@@ -83,8 +83,8 @@ CAPITAL=$(mkaccount CAP Capital EQUITY)
 SUPPLIES=$(mkaccount SUP Supplies EXPENSE)
 
 step "2. opening capital 10,000 with type-aware balances"
-LINES=$(printf '[{"accountId":"%s","side":"DEBIT","amountMinorUnits":"10000"},{"accountId":"%s","side":"CREDIT","amountMinorUnits":"10000"}]' "$CASH" "$CAPITAL")
-read -r STATUS OPENING <<<"$(mkposting demo-open 'opening capital' "$LINES")"
+ENTRIES=$(printf '[{"accountId":"%s","side":"DEBIT","amountMinorUnits":"10000"},{"accountId":"%s","side":"CREDIT","amountMinorUnits":"10000"}]' "$CASH" "$CAPITAL")
+read -r STATUS OPENING <<<"$(mkposting demo-open 'opening capital' "$ENTRIES")"
 check "$STATUS" 201 "opening capital"
 check "$(balance "$CASH")" 10000 "cash after opening"
 check "$(balance "$CAPITAL")" 10000 "capital after opening"
@@ -92,7 +92,7 @@ check "$(balance "$CAPITAL")" 10000 "capital after opening"
 step "3. replay proves unchanged posting/entry counts"
 BEFORE_P=$(db 'SELECT COUNT(*) FROM ledger_posting;')
 BEFORE_E=$(db 'SELECT COUNT(*) FROM ledger_entry;')
-read -r STATUS REPLAY <<<"$(mkposting demo-open 'opening capital' "$LINES")"
+read -r STATUS REPLAY <<<"$(mkposting demo-open 'opening capital' "$ENTRIES")"
 check "$STATUS" 200 "idempotent replay"
 [ "$REPLAY" = "$OPENING" ] || fail "replay returned a different posting id"
 check "$(db 'SELECT COUNT(*) FROM ledger_posting;')" "$BEFORE_P" "posting count after replay"
@@ -104,8 +104,8 @@ read -r STATUS _ <<<"$(mkposting demo-open 'opening capital' "$OTHER")"
 check "$STATUS" 409 "conflicting reuse"
 
 step "5. expense 2,500 with balances plus conservation"
-SPEND_LINES=$(printf '[{"accountId":"%s","side":"DEBIT","amountMinorUnits":"2500"},{"accountId":"%s","side":"CREDIT","amountMinorUnits":"2500"}]' "$SUPPLIES" "$CASH")
-read -r STATUS SPEND <<<"$(mkposting demo-spend 'buy supplies' "$SPEND_LINES")"
+SPEND_ENTRIES=$(printf '[{"accountId":"%s","side":"DEBIT","amountMinorUnits":"2500"},{"accountId":"%s","side":"CREDIT","amountMinorUnits":"2500"}]' "$SUPPLIES" "$CASH")
+read -r STATUS SPEND <<<"$(mkposting demo-spend 'buy supplies' "$SPEND_ENTRIES")"
 check "$STATUS" 201 "expense posting"
 check "$(balance "$CASH")" 7500 "cash after spend"
 check "$(balance "$SUPPLIES")" 2500 "supplies after spend"

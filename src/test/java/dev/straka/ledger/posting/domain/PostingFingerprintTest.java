@@ -21,52 +21,53 @@ class PostingFingerprintTest {
   private static final CurrencyCode CAD = new CurrencyCode("CAD");
   private static final Instant WHEN = Instant.parse("2026-09-04T12:00:00Z");
 
-  private static PostingLine line(String account, EntrySide side, long amount) {
-    return new PostingLine(
+  private static PostingEntry entry(String account, EntrySide side, long amount) {
+    return new PostingEntry(
         new AccountId(UUID.nameUUIDFromBytes(account.getBytes())), side, new EntryAmount(amount));
   }
 
-  private static List<PostingLine> lines() {
+  private static List<PostingEntry> entries() {
     return List.of(
-        line("cash", EntrySide.DEBIT, 10_000), line("capital", EntrySide.CREDIT, 10_000));
+        entry("cash", EntrySide.DEBIT, 10_000), entry("capital", EntrySide.CREDIT, 10_000));
   }
 
   @Test
   void identicalRequestsShareAFingerprint() {
     assertEquals(
-        PostingFingerprint.v1Standard("opening", WHEN, lines()),
-        PostingFingerprint.v1Standard("opening", WHEN, lines()));
+        PostingFingerprint.v1Standard("opening", WHEN, entries()),
+        PostingFingerprint.v1Standard("opening", WHEN, entries()));
   }
 
   @Test
   void everySemanticFieldMovesTheDigest() {
-    PostingFingerprint base = PostingFingerprint.v1Standard("opening", WHEN, lines());
-    assertNotEquals(base, PostingFingerprint.v1Standard("opening!", WHEN, lines()));
-    assertNotEquals(base, PostingFingerprint.v1Standard("opening", WHEN.plusSeconds(1), lines()));
+    PostingFingerprint base = PostingFingerprint.v1Standard("opening", WHEN, entries());
+    assertNotEquals(base, PostingFingerprint.v1Standard("opening!", WHEN, entries()));
+    assertNotEquals(base, PostingFingerprint.v1Standard("opening", WHEN.plusSeconds(1), entries()));
     assertNotEquals(
         base,
         PostingFingerprint.v1Standard(
             "opening",
             WHEN,
             List.of(
-                line("cash", EntrySide.DEBIT, 10_001), line("capital", EntrySide.CREDIT, 10_001))));
+                entry("cash", EntrySide.DEBIT, 10_001),
+                entry("capital", EntrySide.CREDIT, 10_001))));
     assertNotEquals(
         base,
         PostingFingerprint.v1Standard(
             "opening",
             WHEN,
             List.of(
-                line("other", EntrySide.DEBIT, 10_000),
-                line("capital", EntrySide.CREDIT, 10_000))));
+                entry("other", EntrySide.DEBIT, 10_000),
+                entry("capital", EntrySide.CREDIT, 10_000))));
   }
 
   @Test
-  void lineOrderIsSignificant() {
-    // Order becomes the immutable line_number, so swapping lines is a different request.
-    List<PostingLine> swapped =
-        List.of(line("capital", EntrySide.CREDIT, 10_000), line("cash", EntrySide.DEBIT, 10_000));
+  void entryOrderIsSignificant() {
+    // Order becomes the immutable entry_number, so swapping entries is a different request.
+    List<PostingEntry> swapped =
+        List.of(entry("capital", EntrySide.CREDIT, 10_000), entry("cash", EntrySide.DEBIT, 10_000));
     assertNotEquals(
-        PostingFingerprint.v1Standard("opening", WHEN, lines()),
+        PostingFingerprint.v1Standard("opening", WHEN, entries()),
         PostingFingerprint.v1Standard("opening", WHEN, swapped));
   }
 

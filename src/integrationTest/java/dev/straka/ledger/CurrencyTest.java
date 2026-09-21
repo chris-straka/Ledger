@@ -53,7 +53,7 @@ class CurrencyTest extends LedgerIntegrationTest {
       SQLException failure =
           statementFailure(
               conn,
-              "INSERT INTO ledger_entry (posting_id, line_number, account_id, currency_code, side,"
+              "INSERT INTO ledger_entry (posting_id, entry_number, account_id, currency_code, side,"
                   + " amount_minor_units) VALUES (?, 1, ?, 'USD', 'DEBIT', 100)",
               posting,
               cash);
@@ -73,7 +73,7 @@ class CurrencyTest extends LedgerIntegrationTest {
       SQLException failure =
           statementFailure(
               conn,
-              "INSERT INTO ledger_entry (posting_id, line_number, account_id, currency_code, side,"
+              "INSERT INTO ledger_entry (posting_id, entry_number, account_id, currency_code, side,"
                   + " amount_minor_units) VALUES (?, 1, ?, 'CAD', 'DEBIT', 100)",
               posting,
               usdCash);
@@ -96,7 +96,7 @@ class CurrencyTest extends LedgerIntegrationTest {
       SQLException failure =
           statementFailure(
               conn,
-              "INSERT INTO ledger_entry (posting_id, line_number, account_id, currency_code, side,"
+              "INSERT INTO ledger_entry (posting_id, entry_number, account_id, currency_code, side,"
                   + " amount_minor_units) VALUES (?, 2, ?, 'USD', 'CREDIT', 100)",
               posting,
               usdCapital);

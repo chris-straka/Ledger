@@ -77,20 +77,20 @@ class ReversalApiTest extends LedgerIntegrationTest {
     return UUID.fromString((String) response.getBody().get("accountId"));
   }
 
-  private static Map<String, Object> line(UUID account, String side, String amount) {
-    Map<String, Object> line = new HashMap<>();
-    line.put("accountId", account.toString());
-    line.put("side", side);
-    line.put("amountMinorUnits", amount);
-    return line;
+  private static Map<String, Object> entry(UUID account, String side, String amount) {
+    Map<String, Object> entry = new HashMap<>();
+    entry.put("accountId", account.toString());
+    entry.put("side", side);
+    entry.put("amountMinorUnits", amount);
+    return entry;
   }
 
   private static Map<String, Object> postingBody(
-      String description, List<Map<String, Object>> lines) {
+      String description, List<Map<String, Object>> entries) {
     Map<String, Object> body = new HashMap<>();
     body.put("description", description);
     body.put("effectiveAt", Instant.now().toString());
-    body.put("lines", lines);
+    body.put("entries", entries);
     return body;
   }
 
@@ -99,22 +99,23 @@ class ReversalApiTest extends LedgerIntegrationTest {
         newKey(),
         "funding",
         List.of(
-            line(accounts.cash(), "DEBIT", "10000"), line(accounts.capital(), "CREDIT", "10000")));
+            entry(accounts.cash(), "DEBIT", "10000"),
+            entry(accounts.capital(), "CREDIT", "10000")));
     return postStandard(
         newKey(),
         "buy supplies",
         List.of(
-            line(accounts.supplies(), "DEBIT", "2500"), line(accounts.cash(), "CREDIT", "2500")));
+            entry(accounts.supplies(), "DEBIT", "2500"), entry(accounts.cash(), "CREDIT", "2500")));
   }
 
   @SuppressWarnings("unchecked")
-  private String postStandard(String key, String description, List<Map<String, Object>> lines) {
+  private String postStandard(String key, String description, List<Map<String, Object>> entries) {
     ResponseEntity<Map> response =
         rest.post()
             .uri("/v1/postings")
             .contentType(MediaType.APPLICATION_JSON)
             .header("Idempotency-Key", key)
-            .body(postingBody(description, lines))
+            .body(postingBody(description, entries))
             .retrieve()
             .toEntity(Map.class);
     assertEquals(201, response.getStatusCode().value());
@@ -240,13 +241,13 @@ class ReversalApiTest extends LedgerIntegrationTest {
             newKey(),
             "funding",
             List.of(
-                line(accounts.cash(), "DEBIT", "10000"),
-                line(accounts.capital(), "CREDIT", "10000")));
+                entry(accounts.cash(), "DEBIT", "10000"),
+                entry(accounts.capital(), "CREDIT", "10000")));
     postStandard(
         newKey(),
         "spend most",
         List.of(
-            line(accounts.supplies(), "DEBIT", "8000"), line(accounts.cash(), "CREDIT", "8000")));
+            entry(accounts.supplies(), "DEBIT", "8000"), entry(accounts.cash(), "CREDIT", "8000")));
     // Undoing the funding would pull 10,000 out of a 2,000 cash account.
     ResponseEntity<Map> response = postReversal(newKey(), opening, "take back capital");
     assertEquals(409, response.getStatusCode().value());
@@ -266,7 +267,7 @@ class ReversalApiTest extends LedgerIntegrationTest {
       insertEntry(conn, target, 2, capital, "CAD", "CREDIT", 10_000);
       conn.commit();
 
-      // A REVERSAL-labeled posting whose lines are NOT the exact inverse.
+      // A REVERSAL-labeled posting whose entries are NOT the exact inverse.
       conn.setAutoCommit(false);
       UUID fraud = insertPosting(conn, newKey(), "REVERSAL", target, "CAD", 2, "fake undo");
       insertEntry(conn, fraud, 1, cash, "CAD", "DEBIT", 10_000);

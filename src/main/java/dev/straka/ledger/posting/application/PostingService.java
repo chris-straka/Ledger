@@ -11,9 +11,9 @@ import dev.straka.ledger.posting.domain.EntryAmount;
 import dev.straka.ledger.posting.domain.IdempotencyKey;
 import dev.straka.ledger.posting.domain.InvalidPostingException;
 import dev.straka.ledger.posting.domain.PostingDraft;
+import dev.straka.ledger.posting.domain.PostingEntry;
 import dev.straka.ledger.posting.domain.PostingFingerprint;
 import dev.straka.ledger.posting.domain.PostingKind;
-import dev.straka.ledger.posting.domain.PostingLine;
 import dev.straka.ledger.posting.persistence.PostingRepository;
 import dev.straka.ledger.support.crash.CrashGate;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -88,21 +88,22 @@ public class PostingService {
   }
 
   /**
-   * Record carrying transport-level input for one standard posting. Line order becomes line_number.
+   * Record carrying transport-level input for one standard posting. Line order becomes
+   * entry_number.
    */
-  public record PostingLineInput(UUID accountId, String side, String amountMinorUnits) {}
+  public record PostingEntryInput(UUID accountId, String side, String amountMinorUnits) {}
 
   public PostingOutcome post(
-      String key, String description, Instant effectiveAt, List<PostingLineInput> inputs) {
+      String key, String description, Instant effectiveAt, List<PostingEntryInput> inputs) {
     IdempotencyKey idempotencyKey = new IdempotencyKey(key);
     String cleanDescription = cleanDescription(description);
     Instant cleanEffective = cleanEffectiveAt(effectiveAt);
-    List<PostingLine> lines = toLines(inputs);
+    List<PostingEntry> entries = toLines(inputs);
 
     // Currency is derived from accounts inside the transaction, never trusted
     // from the client — so it is not part of the compared body either.
     PostingFingerprint fingerprint =
-        PostingFingerprint.v1Standard(cleanDescription, cleanEffective, lines);
+        PostingFingerprint.v1Standard(cleanDescription, cleanEffective, entries);
 
     try {
       PostingOutcome outcome;
@@ -111,7 +112,7 @@ public class PostingService {
             runSerializable(
                 () ->
                     attemptPost(
-                        idempotencyKey, fingerprint, cleanDescription, cleanEffective, lines),
+                        idempotencyKey, fingerprint, cleanDescription, cleanEffective, entries),
                 "standard");
       } catch (DuplicateKeyException e) {
         // The unique key — not a check-then-insert race — chose the winner. Our whole
@@ -140,7 +141,7 @@ public class PostingService {
   }
 
   /**
-   * Exact reversal of a standard posting. The server derives inverse lines from the committed
+   * Exact reversal of a standard posting. The server derives inverse entries from the committed
    * original; clients supply only a reason and effective time, so an arbitrary posting can never be
    * labeled a reversal. Ordinary overdraft policy applies — a later-spent account can refuse its
    * own history being undone.
@@ -220,7 +221,7 @@ public class PostingService {
           throw new PostingRetryExhaustedException(
               "posting did not serialize after " + MAX_ATTEMPTS + " attempts");
         }
-        // The deferred trigger is the last line of defense: if it rejects a commit
+        // The deferred trigger is the last entry of defense: if it rejects a commit
         // the application check admitted (e.g. a concurrent overdraft decision), the
         // verdict still surfaces as a business rejection, never a 500.
         RuntimeException translated = translateTriggerRejection(e);
@@ -237,15 +238,15 @@ public class PostingService {
       PostingFingerprint fingerprint,
       String description,
       Instant effectiveAt,
-      List<PostingLine> lines) {
+      List<PostingEntry> entries) {
     PostingRepository.CommittedPosting existing = postings.findByKey(key).orElse(null);
     if (existing != null) {
       return compare(existing, fingerprint);
     }
 
-    Map<AccountId, PostingRepository.ReferencedAccount> referenced = loadAccounts(lines);
+    Map<AccountId, PostingRepository.ReferencedAccount> referenced = loadAccounts(entries);
     CurrencyCode currency = singleCurrency(referenced);
-    PostingDraft draft = new PostingDraft(currency, lines);
+    PostingDraft draft = new PostingDraft(currency, entries);
     rejectOverdraft(draft, referenced);
 
     UUID id =
@@ -255,10 +256,10 @@ public class PostingService {
             PostingKind.STANDARD,
             null,
             currency,
-            lines.size(),
+            entries.size(),
             description,
             effectiveAt);
-    postings.insertEntries(id, currency, lines);
+    postings.insertEntries(id, currency, entries);
     // Crash window one: header plus entries are inserted, the transaction is still
     // open. A SIGKILL here must leave neither row behind.
     crash.awaitBeforeCommit();
@@ -296,11 +297,11 @@ public class PostingService {
       throw new ReversalConflictException("only standard postings can be reversed");
     }
 
-    List<PostingLine> inverse = new ArrayList<>(original.entries().size());
+    List<PostingEntry> inverse = new ArrayList<>(original.entries().size());
     for (PostingRepository.StoredEntry entry : original.entries()) {
       EntrySide flipped = entry.side() == EntrySide.DEBIT ? EntrySide.CREDIT : EntrySide.DEBIT;
       inverse.add(
-          new PostingLine(entry.accountId(), flipped, new EntryAmount(entry.amountMinorUnits())));
+          new PostingEntry(entry.accountId(), flipped, new EntryAmount(entry.amountMinorUnits())));
     }
 
     Map<AccountId, PostingRepository.ReferencedAccount> referenced = loadAccounts(inverse);
@@ -346,10 +347,10 @@ public class PostingService {
   }
 
   private Map<AccountId, PostingRepository.ReferencedAccount> loadAccounts(
-      List<PostingLine> lines) {
+      List<PostingEntry> entries) {
     Set<AccountId> ids = new HashSet<>();
-    for (PostingLine line : lines) {
-      ids.add(line.accountId());
+    for (PostingEntry entry : entries) {
+      ids.add(entry.accountId());
     }
 
     Map<AccountId, PostingRepository.ReferencedAccount> found = postings.accountsOf(ids);
@@ -402,13 +403,13 @@ public class PostingService {
         .orElseThrow(() -> new AccountNotFoundException("account not found: " + id));
   }
 
-  private static List<PostingLine> toLines(List<PostingLineInput> inputs) {
+  private static List<PostingEntry> toLines(List<PostingEntryInput> inputs) {
     if (inputs == null) {
-      throw new InvalidPostingException("entry lines are required");
+      throw new InvalidPostingException("entry entries are required");
     }
 
-    List<PostingLine> lines = new ArrayList<>(inputs.size());
-    for (PostingLineInput input : inputs) {
+    List<PostingEntry> entries = new ArrayList<>(inputs.size());
+    for (PostingEntryInput input : inputs) {
       if (input == null || input.accountId() == null) {
         throw new InvalidPostingException("entry account is required");
       }
@@ -418,11 +419,11 @@ public class PostingService {
       } catch (IllegalArgumentException | NullPointerException e) {
         throw new InvalidPostingException("unknown entry side: " + input.side());
       }
-      lines.add(
-          new PostingLine(
+      entries.add(
+          new PostingEntry(
               new AccountId(input.accountId()), side, EntryAmount.parse(input.amountMinorUnits())));
     }
-    return lines;
+    return entries;
   }
 
   private static String cleanDescription(String description) {

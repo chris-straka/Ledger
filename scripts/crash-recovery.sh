@@ -86,8 +86,8 @@ STATUS=$(curl -s -o /tmp/crash-resp.json -w "%{http_code}" -X POST "$API/v1/acco
 [ "$STATUS" = "201" ] || fail "account creation got $STATUS"
 CAPITAL=$(json_field accountId)
 
-BODY1=$(printf '{"description":"crash-before-commit","effectiveAt":"2026-09-04T12:00:00Z","lines":[{"accountId":"%s","side":"DEBIT","amountMinorUnits":"10000"},{"accountId":"%s","side":"CREDIT","amountMinorUnits":"10000"}]}' "$CASH" "$CAPITAL")
-BODY2=$(printf '{"description":"crash-after-commit","effectiveAt":"2026-09-04T12:00:00Z","lines":[{"accountId":"%s","side":"DEBIT","amountMinorUnits":"2500"},{"accountId":"%s","side":"CREDIT","amountMinorUnits":"2500"}]}' "$CASH" "$CAPITAL")
+BODY1=$(printf '{"description":"crash-before-commit","effectiveAt":"2026-09-04T12:00:00Z","entries":[{"accountId":"%s","side":"DEBIT","amountMinorUnits":"10000"},{"accountId":"%s","side":"CREDIT","amountMinorUnits":"10000"}]}' "$CASH" "$CAPITAL")
+BODY2=$(printf '{"description":"crash-after-commit","effectiveAt":"2026-09-04T12:00:00Z","entries":[{"accountId":"%s","side":"DEBIT","amountMinorUnits":"2500"},{"accountId":"%s","side":"CREDIT","amountMinorUnits":"2500"}]}' "$CASH" "$CAPITAL")
 
 echo "== window 1: SIGKILL with the posting transaction open"
 curl -sf -X POST "$API/internal/crash/arm?window=before-commit" >/dev/null \

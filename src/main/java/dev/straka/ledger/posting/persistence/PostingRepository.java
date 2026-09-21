@@ -4,9 +4,9 @@ import dev.straka.ledger.account.domain.AccountId;
 import dev.straka.ledger.account.domain.AccountType;
 import dev.straka.ledger.account.domain.CurrencyCode;
 import dev.straka.ledger.posting.domain.IdempotencyKey;
+import dev.straka.ledger.posting.domain.PostingEntry;
 import dev.straka.ledger.posting.domain.PostingFingerprint;
 import dev.straka.ledger.posting.domain.PostingKind;
-import dev.straka.ledger.posting.domain.PostingLine;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -63,24 +63,24 @@ public class PostingRepository {
         .single();
   }
 
-  public void insertEntries(UUID postingId, CurrencyCode currency, List<PostingLine> lines) {
+  public void insertEntries(UUID postingId, CurrencyCode currency, List<PostingEntry> entries) {
     List<Object[]> batch = new java.util.ArrayList<>();
 
-    for (int i = 0; i < lines.size(); i++) {
-      PostingLine line = lines.get(i);
+    for (int i = 0; i < entries.size(); i++) {
+      PostingEntry entry = entries.get(i);
       batch.add(
           new Object[] {
             postingId,
             i + 1,
-            line.accountId().value(),
+            entry.accountId().value(),
             currency.code(),
-            line.side().name(),
-            line.amount().minorUnits()
+            entry.side().name(),
+            entry.amount().minorUnits()
           });
     }
 
     template.batchUpdate(
-        "INSERT INTO ledger_entry (posting_id, line_number, account_id, currency_code, side,"
+        "INSERT INTO ledger_entry (posting_id, entry_number, account_id, currency_code, side,"
             + " amount_minor_units) VALUES (?, ?, ?, ?, ?, ?)",
         batch);
   }
@@ -102,8 +102,8 @@ public class PostingRepository {
     List<StoredEntry> entries =
         jdbc.sql(
                 """
-                SELECT posting_id, line_number, account_id, currency_code, side, amount_minor_units
-                FROM ledger_entry WHERE posting_id = :id ORDER BY line_number
+                SELECT posting_id, entry_number, account_id, currency_code, side, amount_minor_units
+                FROM ledger_entry WHERE posting_id = :id ORDER BY entry_number
                 """)
             .param("id", id)
             .query(PostingRepository::mapEntry)
@@ -134,7 +134,7 @@ public class PostingRepository {
 
   private static StoredEntry mapEntry(ResultSet rs, int n) throws SQLException {
     return new StoredEntry(
-        rs.getInt("line_number"),
+        rs.getInt("entry_number"),
         new AccountId((UUID) rs.getObject("account_id")),
         new CurrencyCode(rs.getString("currency_code")),
         dev.straka.ledger.account.domain.EntrySide.valueOf(rs.getString("side")),
@@ -168,7 +168,7 @@ public class PostingRepository {
 
   /** Record describing one committed entry row. */
   public record StoredEntry(
-      int lineNumber,
+      int entryNumber,
       AccountId accountId,
       CurrencyCode currency,
       dev.straka.ledger.account.domain.EntrySide side,

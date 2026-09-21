@@ -106,7 +106,7 @@ abstract class LedgerIntegrationTest {
   static void insertEntry(
       Connection conn,
       UUID postingId,
-      int line,
+      int entry,
       UUID accountId,
       String currency,
       String side,
@@ -114,10 +114,10 @@ abstract class LedgerIntegrationTest {
       throws SQLException {
     try (PreparedStatement ps =
         conn.prepareStatement(
-            "INSERT INTO ledger_entry (posting_id, line_number, account_id, currency_code, side,"
+            "INSERT INTO ledger_entry (posting_id, entry_number, account_id, currency_code, side,"
                 + " amount_minor_units) VALUES (?, ?, ?, ?, ?, ?)")) {
       ps.setObject(1, postingId);
-      ps.setInt(2, line);
+      ps.setInt(2, entry);
       ps.setObject(3, accountId);
       ps.setString(4, currency);
       ps.setString(5, side);

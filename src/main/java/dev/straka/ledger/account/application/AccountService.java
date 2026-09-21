@@ -45,7 +45,7 @@ public class AccountService {
       EntryCursor parsed = EntryCursor.parse(cursorRaw);
       after =
           new AccountRepository.EntryCursorBean(
-              parsed.recordedAt(), parsed.postingId(), parsed.lineNumber());
+              parsed.recordedAt(), parsed.postingId(), parsed.entryNumber());
     }
 
     int limit = parseLimit(limitRaw);
@@ -58,7 +58,8 @@ public class AccountService {
     }
     if (rows.size() > limit) {
       AccountRepository.AccountEntry last = rows.get(limit - 1);
-      nextCursor = new EntryCursor(last.recordedAt(), last.postingId(), last.lineNumber()).encode();
+      nextCursor =
+          new EntryCursor(last.recordedAt(), last.postingId(), last.entryNumber()).encode();
     }
     return new EntryPage(List.copyOf(page), nextCursor);
   }

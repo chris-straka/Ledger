@@ -15,17 +15,17 @@ import java.util.function.Function;
 /**
  * A validated, immutable posting draft: the all-or-nothing unit of the ledger.
  *
- * <p>A draft is accepted only when every line agrees:
+ * <p>A draft is accepted only when every entry agrees:
  *
  * <ul>
- *   <li>2–100 ordered lines, across at least two distinct accounts;
+ *   <li>2–100 ordered entries, across at least two distinct accounts;
  *   <li>one currency for the whole posting;
  *   <li>debits (+) equal credits (-), so the signed journal sum is zero.
  * </ul>
  *
  * <p>DB re-checks zero sum at commit, so non-Java writers cannot break it either.
  */
-public record PostingDraft(CurrencyCode currency, List<PostingLine> lines) {
+public record PostingDraft(CurrencyCode currency, List<PostingEntry> entries) {
   /**
    * Checks the {@link PostingDraft} acceptance rules. Totals are compared in {@link BigInteger} so
    * sums near the {@code long} limit are still judged exactly.
@@ -35,24 +35,25 @@ public record PostingDraft(CurrencyCode currency, List<PostingLine> lines) {
   public PostingDraft {
     if (currency == null) throw new InvalidPostingException("posting currency is required");
 
-    if (lines == null || lines.size() < 2 || lines.size() > 100)
+    if (entries == null || entries.size() < 2 || entries.size() > 100)
       throw new InvalidPostingException(
-          "posting must declare 2-100 entry lines, got " + (lines == null ? 0 : lines.size()));
+          "posting must declare 2-100 entry entries, got "
+              + (entries == null ? 0 : entries.size()));
 
     // Null elements are rejected here because List.copyOf would throw a bare NPE instead.
-    for (PostingLine line : lines) {
-      if (line == null) throw new InvalidPostingException("posting lines must not be null");
+    for (PostingEntry entry : entries) {
+      if (entry == null) throw new InvalidPostingException("posting entries must not be null");
     }
 
-    lines = List.copyOf(lines);
+    entries = List.copyOf(entries);
 
     Set<AccountId> accounts = new HashSet<>();
     BigInteger debits = BigInteger.ZERO;
     BigInteger credits = BigInteger.ZERO;
-    for (PostingLine line : lines) {
-      accounts.add(line.accountId());
-      BigInteger amount = BigInteger.valueOf(line.amount().minorUnits());
-      if (line.side() == EntrySide.DEBIT) {
+    for (PostingEntry entry : entries) {
+      accounts.add(entry.accountId());
+      BigInteger amount = BigInteger.valueOf(entry.amount().minorUnits());
+      if (entry.side() == EntrySide.DEBIT) {
         debits = debits.add(amount);
       } else {
         credits = credits.add(amount);
@@ -72,27 +73,27 @@ public record PostingDraft(CurrencyCode currency, List<PostingLine> lines) {
   /** Signed journal sum of the draft: always zero by construction. */
   public BigInteger signedSum() {
     BigInteger sum = BigInteger.ZERO;
-    for (PostingLine line : lines) {
-      BigInteger amount = BigInteger.valueOf(line.amount().minorUnits());
-      sum = line.side() == EntrySide.DEBIT ? sum.add(amount) : sum.subtract(amount);
+    for (PostingEntry entry : entries) {
+      BigInteger amount = BigInteger.valueOf(entry.amount().minorUnits());
+      sum = entry.side() == EntrySide.DEBIT ? sum.add(amount) : sum.subtract(amount);
     }
     return sum;
   }
 
   /**
    * Normal-side delta per account: how much each account's reported balance moves if this draft
-   * commits. Positive means the balance increases. Several lines for one account aggregate into a
-   * single delta, so line order cannot change the overdraft verdict.
+   * commits. Positive means the balance increases. Several entries for one account aggregate into a
+   * single delta, so entry order cannot change the overdraft verdict.
    */
   public Map<AccountId, BigInteger> deltasByAccount(Function<AccountId, AccountType> types) {
     Map<AccountId, BigInteger> deltas = new HashMap<>();
-    for (PostingLine line : lines) {
-      AccountType type = types.apply(line.accountId());
-      BigInteger signed = BigInteger.valueOf(line.amount().minorUnits());
-      if (line.side() != type.normalSide()) {
+    for (PostingEntry entry : entries) {
+      AccountType type = types.apply(entry.accountId());
+      BigInteger signed = BigInteger.valueOf(entry.amount().minorUnits());
+      if (entry.side() != type.normalSide()) {
         signed = signed.negate();
       }
-      deltas.merge(line.accountId(), signed, BigInteger::add);
+      deltas.merge(entry.accountId(), signed, BigInteger::add);
     }
     return Map.copyOf(deltas);
   }

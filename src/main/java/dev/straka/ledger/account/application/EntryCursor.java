@@ -6,13 +6,13 @@ import java.util.Base64;
 import java.util.UUID;
 
 /**
- * Record holding an opaque keyset cursor over (recordedAt, postingId, lineNumber): the immutable
+ * Record holding an opaque keyset cursor over (recordedAt, postingId, entryNumber): the immutable
  * order entries are listed in. Encoded base64url so clients treat it as opaque; any tampering fails
  * parsing and the request is rejected as malformed rather than silently restarting the listing.
  */
-public record EntryCursor(Instant recordedAt, UUID postingId, int lineNumber) {
+public record EntryCursor(Instant recordedAt, UUID postingId, int entryNumber) {
   public String encode() {
-    String raw = recordedAt.toString() + "|" + postingId + "|" + lineNumber;
+    String raw = recordedAt.toString() + "|" + postingId + "|" + entryNumber;
     return Base64.getUrlEncoder()
         .withoutPadding()
         .encodeToString(raw.getBytes(StandardCharsets.UTF_8));

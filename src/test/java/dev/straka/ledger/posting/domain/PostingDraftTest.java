@@ -21,53 +21,54 @@ class PostingDraftTest {
 
   private static final CurrencyCode CAD = new CurrencyCode("CAD");
 
-  private static PostingLine line(String account, EntrySide side, long amount) {
-    return new PostingLine(
+  private static PostingEntry entry(String account, EntrySide side, long amount) {
+    return new PostingEntry(
         new AccountId(java.util.UUID.nameUUIDFromBytes(account.getBytes())),
         side,
         new EntryAmount(amount));
   }
 
   @Test
-  void balancedTwoLinesConstruct() {
+  void balancedTwoEntriesConstruct() {
     PostingDraft draft =
         new PostingDraft(
             CAD,
             List.of(
-                line("cash", EntrySide.DEBIT, 10_000), line("capital", EntrySide.CREDIT, 10_000)));
+                entry("cash", EntrySide.DEBIT, 10_000),
+                entry("capital", EntrySide.CREDIT, 10_000)));
     assertEquals(BigInteger.ZERO, draft.signedSum());
-    assertEquals(2, draft.lines().size());
+    assertEquals(2, draft.entries().size());
   }
 
   @Test
-  void balancedMultiLineConstructs() {
+  void balancedMultiEntryConstructs() {
     PostingDraft draft =
         new PostingDraft(
             CAD,
             List.of(
-                line("cash", EntrySide.DEBIT, 6_000),
-                line("supplies", EntrySide.DEBIT, 4_000),
-                line("capital", EntrySide.CREDIT, 10_000)));
+                entry("cash", EntrySide.DEBIT, 6_000),
+                entry("supplies", EntrySide.DEBIT, 4_000),
+                entry("capital", EntrySide.CREDIT, 10_000)));
     assertEquals(BigInteger.ZERO, draft.signedSum());
   }
 
   @Test
   void totalsBeyondLongRangeStillJudgeExactly() {
-    // Each leg fits in a long, but the totals overflow long addition: 60 lines of
+    // Each leg fits in a long, but the totals overflow long addition: 60 entries of
     // Long.MAX/20 per side. BigInteger sees equality; wrapping long math would not.
     long leg = Long.MAX_VALUE / 20;
-    List<PostingLine> lines = new ArrayList<>();
+    List<PostingEntry> entries = new ArrayList<>();
     for (int i = 0; i < 30; i++) {
-      lines.add(line("cash-" + i, EntrySide.DEBIT, leg));
+      entries.add(entry("cash-" + i, EntrySide.DEBIT, leg));
     }
     for (int i = 0; i < 30; i++) {
-      lines.add(line("capital-" + i, EntrySide.CREDIT, leg));
+      entries.add(entry("capital-" + i, EntrySide.CREDIT, leg));
     }
-    PostingDraft draft = new PostingDraft(CAD, lines);
+    PostingDraft draft = new PostingDraft(CAD, entries);
     assertEquals(BigInteger.ZERO, draft.signedSum());
 
-    List<PostingLine> tampered = new ArrayList<>(lines);
-    tampered.set(0, line("cash-0", EntrySide.DEBIT, leg + 1));
+    List<PostingEntry> tampered = new ArrayList<>(entries);
+    tampered.set(0, entry("cash-0", EntrySide.DEBIT, leg + 1));
     assertThrows(InvalidPostingException.class, () -> new PostingDraft(CAD, tampered));
   }
 
@@ -79,24 +80,24 @@ class PostingDraftTest {
             new PostingDraft(
                 CAD,
                 List.of(
-                    line("cash", EntrySide.DEBIT, 100), line("capital", EntrySide.CREDIT, 50))));
+                    entry("cash", EntrySide.DEBIT, 100), entry("capital", EntrySide.CREDIT, 50))));
   }
 
   @Test
-  void lineCountBoundsAreEnforced() {
-    PostingLine debit = line("cash", EntrySide.DEBIT, 100);
-    PostingLine credit = line("capital", EntrySide.CREDIT, 100);
+  void entryCountBoundsAreEnforced() {
+    PostingEntry debit = entry("cash", EntrySide.DEBIT, 100);
+    PostingEntry credit = entry("capital", EntrySide.CREDIT, 100);
     assertThrows(InvalidPostingException.class, () -> new PostingDraft(CAD, List.of()));
     assertThrows(InvalidPostingException.class, () -> new PostingDraft(CAD, List.of(debit)));
-    List<PostingLine> many = new ArrayList<>();
+    List<PostingEntry> many = new ArrayList<>();
     for (int i = 0; i < 50; i++) {
-      many.add(line("cash-" + i, EntrySide.DEBIT, 10));
-      many.add(line("capital-" + i, EntrySide.CREDIT, 10));
+      many.add(entry("cash-" + i, EntrySide.DEBIT, 10));
+      many.add(entry("capital-" + i, EntrySide.CREDIT, 10));
     }
     assertEquals(100, many.size());
     new PostingDraft(CAD, many);
-    many.add(line("extra-cash", EntrySide.DEBIT, 10));
-    many.add(line("extra-capital", EntrySide.CREDIT, 10));
+    many.add(entry("extra-cash", EntrySide.DEBIT, 10));
+    many.add(entry("extra-capital", EntrySide.CREDIT, 10));
     assertThrows(InvalidPostingException.class, () -> new PostingDraft(CAD, many));
   }
 
@@ -109,32 +110,32 @@ class PostingDraftTest {
             new PostingDraft(
                 CAD,
                 List.of(
-                    new PostingLine(cash, EntrySide.DEBIT, new EntryAmount(100)),
-                    new PostingLine(cash, EntrySide.CREDIT, new EntryAmount(100)))));
+                    new PostingEntry(cash, EntrySide.DEBIT, new EntryAmount(100)),
+                    new PostingEntry(cash, EntrySide.CREDIT, new EntryAmount(100)))));
   }
 
   @Test
   void inputListIsCopiedImmutably() {
-    List<PostingLine> mutable =
+    List<PostingEntry> mutable =
         new ArrayList<>(
-            List.of(line("cash", EntrySide.DEBIT, 100), line("capital", EntrySide.CREDIT, 100)));
+            List.of(entry("cash", EntrySide.DEBIT, 100), entry("capital", EntrySide.CREDIT, 100)));
     PostingDraft draft = new PostingDraft(CAD, mutable);
     mutable.clear();
-    assertEquals(2, draft.lines().size());
-    assertThrows(UnsupportedOperationException.class, () -> draft.lines().clear());
+    assertEquals(2, draft.entries().size());
+    assertThrows(UnsupportedOperationException.class, () -> draft.entries().clear());
   }
 
   @Test
-  void deltasAggregatePerAccountIndependentOfLineOrder() {
+  void deltasAggregatePerAccountIndependentOfEntryOrder() {
     AccountId cash = new AccountId(java.util.UUID.randomUUID());
     AccountId capital = new AccountId(java.util.UUID.randomUUID());
     PostingDraft draft =
         new PostingDraft(
             CAD,
             List.of(
-                new PostingLine(cash, EntrySide.DEBIT, new EntryAmount(6_000)),
-                new PostingLine(cash, EntrySide.DEBIT, new EntryAmount(4_000)),
-                new PostingLine(capital, EntrySide.CREDIT, new EntryAmount(10_000))));
+                new PostingEntry(cash, EntrySide.DEBIT, new EntryAmount(6_000)),
+                new PostingEntry(cash, EntrySide.DEBIT, new EntryAmount(4_000)),
+                new PostingEntry(capital, EntrySide.CREDIT, new EntryAmount(10_000))));
     Map<AccountId, BigInteger> deltas =
         draft.deltasByAccount(id -> id.equals(cash) ? AccountType.ASSET : AccountType.EQUITY);
     // Cash (asset, debit-normal): +10000. Capital (equity, credit-normal): +10000.
@@ -143,10 +144,10 @@ class PostingDraftTest {
   }
 
   @Test
-  void nullLinesAreRejected() {
-    List<PostingLine> withNull =
+  void nullEntriesAreRejected() {
+    List<PostingEntry> withNull =
         new ArrayList<>(
-            List.of(line("cash", EntrySide.DEBIT, 100), line("capital", EntrySide.CREDIT, 100)));
+            List.of(entry("cash", EntrySide.DEBIT, 100), entry("capital", EntrySide.CREDIT, 100)));
     withNull.set(0, null);
     assertThrows(InvalidPostingException.class, () -> new PostingDraft(CAD, withNull));
   }

@@ -51,7 +51,7 @@ and import mutation/cascade semantics the ledger forbids.
 
 A row CHECK cannot see sibling rows, so posting integrity is a `CONSTRAINT TRIGGER ... DEFERRABLE
 INITIALLY DEFERRED` firing from both header and entry inserts and judging the commit-time state:
-count match, exact `1..n` lines, ≥2 accounts, zero signed sum, DENY balances, reversal rules. The
+count match, exact `1..n` entries, ≥2 accounts, zero signed sum, DENY balances, reversal rules. The
 immutable declared `entry_count` seals the posting: even a later balanced pair breaks the count.
 
 - Rejected: row CHECKs as cross-row proof; insert-only tables without the count seal (appendable).
@@ -77,7 +77,7 @@ explicit 503. No JVM locks (they cannot protect two instances).
 
 The unique key — not check-then-insert — elects the winner: concurrent inserts race, one wins,
 losers roll back, read the winner outside their transaction, and compare a versioned SHA-256 over
-(kind, description, instant, ordered lines). Equal replays the original (HTTP 200 + flag);
+(kind, description, instant, ordered entries). Equal replays the original (HTTP 200 + flag);
 different bodies conflict (409). Only committed postings consume keys, so a retry after a lost
 response discovers the original instead of doubling it.
 
@@ -100,12 +100,12 @@ protocol, which a raw-SQL caller can sidestep. Credentials are not a public API.
 
 ## 9. Exact reversal rather than edit/delete
 
-Corrections are new postings with server-derived inverse lines, validated line-for-line at commit
+Corrections are new postings with server-derived inverse entries, validated entry-for-entry at commit
 (same account/amount/currency, opposite side). One unique slot permits a single V1 reversal;
 reversing a reversal is refused by kind; clients cannot label arbitrary postings as reversals;
 overdraft policy still applies, so spent history can refuse to be undone.
 
-- Rejected: edits, deletes, mutable status flags, client-supplied reversal lines.
+- Rejected: edits, deletes, mutable status flags, client-supplied reversal entries.
 - Proof: `PostingService.reverse`, V3 reversal block; `ReversalApiTest` (7 tests);
   `scripts/demo.sh` step 9.
 

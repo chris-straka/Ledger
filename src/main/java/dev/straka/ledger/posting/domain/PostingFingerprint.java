@@ -13,9 +13,9 @@ import java.util.UUID;
  * Record holding a semantic fingerprint: versioned SHA-256 over a documented canonical tuple, so a
  * retry after a lost HTTP response is recognized as the same request while a different request
  * under one key is a conflict. Covered: algorithm version, operation kind, description, normalized
- * instant, and ordered normalized entry lines. Excluded: generated IDs, recordedAt, trace data, and
- * transport-only fields. JSON property order is irrelevant; entry line order is significant because
- * it becomes the immutable line_number.
+ * instant, and ordered normalized entry entries. Excluded: generated IDs, recordedAt, trace data,
+ * and transport-only fields. JSON property order is irrelevant; entry order is significant because
+ * it becomes the immutable entry_number.
  */
 public record PostingFingerprint(byte[] sha256) {
   public PostingFingerprint {
@@ -27,7 +27,7 @@ public record PostingFingerprint(byte[] sha256) {
 
   /**
    * Reversal fingerprint over the operation kind, target posting ID, reason, and normalized
-   * instant. Server-derived inverse lines are not client input and stay out of the tuple.
+   * instant. Server-derived inverse entries are not client input and stay out of the tuple.
    */
   public static PostingFingerprint v1Reversal(UUID target, String reason, Instant effectiveAt) {
     try {
@@ -44,19 +44,19 @@ public record PostingFingerprint(byte[] sha256) {
   }
 
   public static PostingFingerprint v1Standard(
-      String description, Instant effectiveAt, List<PostingLine> lines) {
+      String description, Instant effectiveAt, List<PostingEntry> entries) {
     try {
       MessageDigest digest = MessageDigest.getInstance("SHA-256");
       field(digest, "v1");
       field(digest, PostingKind.STANDARD.name());
       field(digest, description);
       field(digest, effectiveAt.toString());
-      digest.update(ByteBuffer.allocate(4).putInt(lines.size()).array());
+      digest.update(ByteBuffer.allocate(4).putInt(entries.size()).array());
 
-      for (PostingLine line : lines) {
-        field(digest, line.accountId().toString());
-        field(digest, line.side().name());
-        field(digest, Long.toString(line.amount().minorUnits()));
+      for (PostingEntry entry : entries) {
+        field(digest, entry.accountId().toString());
+        field(digest, entry.side().name());
+        field(digest, Long.toString(entry.amount().minorUnits()));
       }
       return new PostingFingerprint(digest.digest());
     } catch (NoSuchAlgorithmException e) {

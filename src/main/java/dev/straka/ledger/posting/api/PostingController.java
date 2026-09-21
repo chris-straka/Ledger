@@ -38,16 +38,16 @@ public class PostingController {
   public ResponseEntity<PostingResponse> post(
       @RequestHeader("Idempotency-Key") String key,
       @Valid @RequestBody CreatePostingRequest request) {
-    List<PostingService.PostingLineInput> lines =
-        request.lines().stream()
+    List<PostingService.PostingEntryInput> entries =
+        request.entries().stream()
             .map(
                 l ->
-                    new PostingService.PostingLineInput(
+                    new PostingService.PostingEntryInput(
                         l.accountId(), l.side(), l.amountMinorUnits()))
             .toList();
 
     PostingOutcome outcome =
-        postings.post(key, request.description().trim(), request.effectiveAt(), lines);
+        postings.post(key, request.description().trim(), request.effectiveAt(), entries);
 
     UUID id =
         switch (outcome) {
@@ -73,8 +73,10 @@ public class PostingController {
       @PathVariable UUID postingId,
       @RequestHeader("Idempotency-Key") String key,
       @Valid @RequestBody CreatePostingReversalRequest request) {
+
     PostingOutcome outcome =
         postings.reverse(key, postingId, request.reason().trim(), request.effectiveAt());
+
     UUID id =
         switch (outcome) {
           case PostingOutcome.Created created -> created.postingId();
@@ -82,6 +84,7 @@ public class PostingController {
         };
 
     PostingResponse body = load(id);
+
     if (outcome instanceof PostingOutcome.Replayed)
       return ResponseEntity.ok().header("Idempotency-Replayed", "true").body(body);
 

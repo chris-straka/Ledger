@@ -4,11 +4,11 @@ import dev.straka.ledger.account.domain.AccountId;
 import dev.straka.ledger.account.domain.EntrySide;
 
 /**
- * Record holding one ordered line of a posting draft. Position in the list becomes the immutable
- * line_number.
+ * Record holding one ordered entry of a posting draft. Position in the list becomes the immutable
+ * entry_number.
  */
-public record PostingLine(AccountId accountId, EntrySide side, EntryAmount amount) {
-  public PostingLine {
+public record PostingEntry(AccountId accountId, EntrySide side, EntryAmount amount) {
+  public PostingEntry {
     if (accountId == null) {
       throw new InvalidPostingException("entry account is required");
     }

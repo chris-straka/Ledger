@@ -5,7 +5,7 @@ import java.time.Instant;
 import java.util.List;
 
 /**
- * Record describing a committed posting with entries in immutable line order. Amounts are integer
+ * Record describing a committed posting with entries in immutable entry order. Amounts are integer
  * strings.
  */
 public record PostingResponse(
@@ -18,8 +18,9 @@ public record PostingResponse(
     Instant effectiveAt,
     Instant recordedAt,
     List<EntryResponse> entries) {
+
   public record EntryResponse(
-      int lineNumber, String accountId, String currency, String side, String amountMinorUnits) {}
+      int entryNumber, String accountId, String currency, String side, String amountMinorUnits) {}
 
   public static PostingResponse from(PostingRepository.StoredPosting posting) {
     return new PostingResponse(
@@ -35,7 +36,7 @@ public record PostingResponse(
             .map(
                 e ->
                     new EntryResponse(
-                        e.lineNumber(),
+                        e.entryNumber(),
                         e.accountId().toString(),
                         e.currency().code(),
                         e.side().name(),

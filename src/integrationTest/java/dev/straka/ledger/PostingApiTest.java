@@ -87,20 +87,20 @@ class PostingApiTest extends LedgerIntegrationTest {
     return UUID.fromString((String) response.getBody().get("accountId"));
   }
 
-  private static Map<String, Object> line(UUID account, String side, String amount) {
-    Map<String, Object> line = new HashMap<>();
-    line.put("accountId", account.toString());
-    line.put("side", side);
-    line.put("amountMinorUnits", amount);
-    return line;
+  private static Map<String, Object> entry(UUID account, String side, String amount) {
+    Map<String, Object> entry = new HashMap<>();
+    entry.put("accountId", account.toString());
+    entry.put("side", side);
+    entry.put("amountMinorUnits", amount);
+    return entry;
   }
 
   private static Map<String, Object> postingBody(
-      String description, List<Map<String, Object>> lines) {
+      String description, List<Map<String, Object>> entries) {
     Map<String, Object> body = new HashMap<>();
     body.put("description", description);
     body.put("effectiveAt", Instant.now().toString());
-    body.put("lines", lines);
+    body.put("entries", entries);
     return body;
   }
 
@@ -124,8 +124,8 @@ class PostingApiTest extends LedgerIntegrationTest {
         postingBody(
             "opening capital",
             List.of(
-                line(accounts.cash(), "DEBIT", "10000"),
-                line(accounts.capital(), "CREDIT", "10000")));
+                entry(accounts.cash(), "DEBIT", "10000"),
+                entry(accounts.capital(), "CREDIT", "10000")));
 
     ResponseEntity<Map> created = postPosting(key, body);
     assertEquals(201, created.getStatusCode().value());
@@ -148,8 +148,8 @@ class PostingApiTest extends LedgerIntegrationTest {
         postingBody(
             "opening capital",
             List.of(
-                line(accounts.cash(), "DEBIT", "10000"),
-                line(accounts.capital(), "CREDIT", "10000")));
+                entry(accounts.cash(), "DEBIT", "10000"),
+                entry(accounts.capital(), "CREDIT", "10000")));
     String first = (String) postPosting(key, body).getBody().get("postingId");
 
     ResponseEntity<Map> replay = postPosting(key, body);
@@ -172,16 +172,16 @@ class PostingApiTest extends LedgerIntegrationTest {
         postingBody(
             "opening capital",
             List.of(
-                line(accounts.cash(), "DEBIT", "10000"),
-                line(accounts.capital(), "CREDIT", "10000"))));
+                entry(accounts.cash(), "DEBIT", "10000"),
+                entry(accounts.capital(), "CREDIT", "10000"))));
     ResponseEntity<Map> conflict =
         postPosting(
             key,
             postingBody(
                 "opening capital",
                 List.of(
-                    line(accounts.cash(), "DEBIT", "9000"),
-                    line(accounts.capital(), "CREDIT", "9000"))));
+                    entry(accounts.cash(), "DEBIT", "9000"),
+                    entry(accounts.capital(), "CREDIT", "9000"))));
     assertEquals(409, conflict.getStatusCode().value());
     assertEquals("IDEMPOTENCY_CONFLICT", conflict.getBody().get("code"));
   }
@@ -195,8 +195,8 @@ class PostingApiTest extends LedgerIntegrationTest {
             postingBody(
                 "unbalanced",
                 List.of(
-                    line(accounts.cash(), "DEBIT", "100"),
-                    line(accounts.capital(), "CREDIT", "50"))));
+                    entry(accounts.cash(), "DEBIT", "100"),
+                    entry(accounts.capital(), "CREDIT", "50"))));
     assertEquals(422, response.getStatusCode().value());
     assertEquals("POSTING_INVALID", response.getBody().get("code"));
   }
@@ -210,8 +210,8 @@ class PostingApiTest extends LedgerIntegrationTest {
             postingBody(
                 "ghost leg",
                 List.of(
-                    line(accounts.cash(), "DEBIT", "100"),
-                    line(UUID.randomUUID(), "CREDIT", "100"))));
+                    entry(accounts.cash(), "DEBIT", "100"),
+                    entry(UUID.randomUUID(), "CREDIT", "100"))));
     assertEquals(404, response.getStatusCode().value());
     assertEquals("ACCOUNT_NOT_FOUND", response.getBody().get("code"));
   }
@@ -227,8 +227,8 @@ class PostingApiTest extends LedgerIntegrationTest {
                 postingBody(
                     "no key",
                     List.of(
-                        line(accounts.cash(), "DEBIT", "100"),
-                        line(accounts.capital(), "CREDIT", "100"))))
+                        entry(accounts.cash(), "DEBIT", "100"),
+                        entry(accounts.capital(), "CREDIT", "100"))))
             .retrieve()
             .onStatus(status -> true, (request, res) -> {})
             .toEntity(Map.class);
@@ -244,8 +244,8 @@ class PostingApiTest extends LedgerIntegrationTest {
             postingBody(
                 "bad key",
                 List.of(
-                    line(accounts.cash(), "DEBIT", "100"),
-                    line(accounts.capital(), "CREDIT", "100"))));
+                    entry(accounts.cash(), "DEBIT", "100"),
+                    entry(accounts.capital(), "CREDIT", "100"))));
     assertEquals(400, response.getStatusCode().value());
     assertEquals("MALFORMED_REQUEST", response.getBody().get("code"));
   }
@@ -258,16 +258,16 @@ class PostingApiTest extends LedgerIntegrationTest {
         postingBody(
             "opening",
             List.of(
-                line(accounts.cash(), "DEBIT", "10000"),
-                line(accounts.capital(), "CREDIT", "10000"))));
+                entry(accounts.cash(), "DEBIT", "10000"),
+                entry(accounts.capital(), "CREDIT", "10000"))));
     ResponseEntity<Map> overspend =
         postPosting(
             newKey(),
             postingBody(
                 "overspend",
                 List.of(
-                    line(accounts.supplies(), "DEBIT", "25000"),
-                    line(accounts.cash(), "CREDIT", "25000"))));
+                    entry(accounts.supplies(), "DEBIT", "25000"),
+                    entry(accounts.cash(), "CREDIT", "25000"))));
     assertEquals(409, overspend.getStatusCode().value());
     assertEquals("OVERDRAFT_REJECTED", overspend.getBody().get("code"));
     assertEquals("10000", balanceOf(accounts.cash()));
@@ -280,7 +280,8 @@ class PostingApiTest extends LedgerIntegrationTest {
         postingBody(
             "time traveler",
             List.of(
-                line(accounts.cash(), "DEBIT", "100"), line(accounts.capital(), "CREDIT", "100")));
+                entry(accounts.cash(), "DEBIT", "100"),
+                entry(accounts.capital(), "CREDIT", "100")));
     body.put("effectiveAt", Instant.now().plusSeconds(3600).toString());
     ResponseEntity<Map> response = postPosting(newKey(), body);
     assertEquals(422, response.getStatusCode().value());
@@ -294,8 +295,8 @@ class PostingApiTest extends LedgerIntegrationTest {
         postingBody(
             "race",
             List.of(
-                line(accounts.cash(), "DEBIT", "10000"),
-                line(accounts.capital(), "CREDIT", "10000")));
+                entry(accounts.cash(), "DEBIT", "10000"),
+                entry(accounts.capital(), "CREDIT", "10000")));
 
     int racers = 20;
     ExecutorService pool = Executors.newFixedThreadPool(racers);

@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Posting closure: the immutable declared entry_count seals a posting. Insert-only tables alone do
- * not stop a later append; the deferred count check does — even when the appended lines are
+ * not stop a later append; the deferred count check does — even when the appended entries are
  * themselves balanced.
  */
 class PostingClosureTest extends LedgerIntegrationTest {
@@ -24,7 +24,7 @@ class PostingClosureTest extends LedgerIntegrationTest {
   }
 
   @Test
-  void appendingOneLineFailsAtCommit() throws Exception {
+  void appendingOneEntryFailsAtCommit() throws Exception {
     UUID posting;
     try (Connection conn = LedgerDatabase.appConnection()) {
       conn.setAutoCommit(false);

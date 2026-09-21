@@ -15,30 +15,30 @@ class CreatePostingRequestValidationTest {
 
   private final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
 
-  private static CreatePostingRequest.EntryLine line() {
-    return new CreatePostingRequest.EntryLine(UUID.randomUUID(), "DEBIT", "100");
+  private static CreatePostingRequest.Entry entry() {
+    return new CreatePostingRequest.Entry(UUID.randomUUID(), "DEBIT", "100");
   }
 
   @Test
-  void nullLinesIsViolation() {
+  void nullEntriesIsViolation() {
     var request = new CreatePostingRequest("opening", Instant.now(), null);
     assertTrue(
         validator.validate(request).stream()
-            .anyMatch(v -> v.getPropertyPath().toString().equals("lines")));
+            .anyMatch(v -> v.getPropertyPath().toString().equals("entries")));
   }
 
   @Test
-  void nestedLineViolationCascades() {
-    var bad = new CreatePostingRequest.EntryLine(null, "DEBIT", "100");
-    var request = new CreatePostingRequest("opening", Instant.now(), List.of(bad, line()));
+  void nestedEntryViolationCascades() {
+    var bad = new CreatePostingRequest.Entry(null, "DEBIT", "100");
+    var request = new CreatePostingRequest("opening", Instant.now(), List.of(bad, entry()));
     assertTrue(
         validator.validate(request).stream()
-            .anyMatch(v -> v.getPropertyPath().toString().startsWith("lines")));
+            .anyMatch(v -> v.getPropertyPath().toString().startsWith("entries")));
   }
 
   @Test
   void wellFormedRequestPasses() {
-    var request = new CreatePostingRequest("opening", Instant.now(), List.of(line(), line()));
+    var request = new CreatePostingRequest("opening", Instant.now(), List.of(entry(), entry()));
     assertEquals(0, validator.validate(request).size());
   }
 }

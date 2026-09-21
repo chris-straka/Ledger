@@ -72,7 +72,7 @@ public class AccountController {
                 e ->
                     new EntryPageResponse.EntryResponse(
                         e.postingId().toString(),
-                        e.lineNumber(),
+                        e.entryNumber(),
                         e.side(),
                         e.amountMinorUnits(),
                         e.currency(),

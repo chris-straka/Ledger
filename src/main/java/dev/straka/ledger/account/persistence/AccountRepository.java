@@ -79,29 +79,29 @@ public class AccountRepository {
   }
 
   /**
-   * One keyset page of an account's journal lines in immutable order (recordedAt, postingId,
-   * lineNumber). Fetches one row past the page so the caller can tell a next page exists.
+   * One keyset page of an account's journal entries in immutable order (recordedAt, postingId,
+   * entryNumber). Fetches one row past the page so the caller can tell a next page exists.
    */
   public List<AccountEntry> listEntries(AccountId id, EntryCursorBean after, int fetch) {
     String sql =
         """
-        SELECT e.posting_id, e.line_number, e.side, e.amount_minor_units, e.currency_code,
+        SELECT e.posting_id, e.entry_number, e.side, e.amount_minor_units, e.currency_code,
             p.posting_kind, p.description, p.recorded_at
         FROM ledger_entry e JOIN ledger_posting p ON p.id = e.posting_id
         WHERE e.account_id = :id
         """;
     if (after != null) {
-      sql += " AND (p.recorded_at, e.posting_id, e.line_number) > (:rec, :pid, :line)";
+      sql += " AND (p.recorded_at, e.posting_id, e.entry_number) > (:rec, :pid, :entry)";
     }
 
-    sql += " ORDER BY p.recorded_at, e.posting_id, e.line_number LIMIT :fetch";
+    sql += " ORDER BY p.recorded_at, e.posting_id, e.entry_number LIMIT :fetch";
     var query = jdbc.sql(sql).param("id", id.value()).param("fetch", fetch);
     if (after != null) {
       query =
           query
               .param("rec", Timestamp.from(after.recordedAt()))
               .param("pid", after.postingId())
-              .param("line", after.lineNumber());
+              .param("entry", after.entryNumber());
     }
 
     return query
@@ -109,7 +109,7 @@ public class AccountRepository {
             (rs, n) ->
                 new AccountEntry(
                     (UUID) rs.getObject("posting_id"),
-                    rs.getInt("line_number"),
+                    rs.getInt("entry_number"),
                     rs.getString("side"),
                     Long.toString(rs.getLong("amount_minor_units")),
                     rs.getString("currency_code"),
@@ -121,7 +121,7 @@ public class AccountRepository {
 
   public record AccountEntry(
       UUID postingId,
-      int lineNumber,
+      int entryNumber,
       String side,
       String amountMinorUnits,
       String currency,
@@ -130,7 +130,7 @@ public class AccountRepository {
       Instant recordedAt) {}
 
   /** Cursor fields without importing the transport codec into persistence. */
-  public record EntryCursorBean(Instant recordedAt, UUID postingId, int lineNumber) {}
+  public record EntryCursorBean(Instant recordedAt, UUID postingId, int entryNumber) {}
 
   public Optional<AccountBalance> balanceOf(AccountId id) {
     return jdbc.sql(

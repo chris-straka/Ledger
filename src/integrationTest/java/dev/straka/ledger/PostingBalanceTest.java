@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 class PostingBalanceTest extends LedgerIntegrationTest {
 
   @Test
-  void balancedTwoLinePostingCommits() throws Exception {
+  void balancedTwoEntryPostingCommits() throws Exception {
     try (Connection conn = LedgerDatabase.appConnection()) {
       conn.setAutoCommit(false);
       UUID cash = insertAccount(conn, "cash", "ASSET", "CAD", "DENY");
@@ -29,7 +29,7 @@ class PostingBalanceTest extends LedgerIntegrationTest {
   }
 
   @Test
-  void balancedMultiLinePostingCommits() throws Exception {
+  void balancedMultiEntryPostingCommits() throws Exception {
     try (Connection conn = LedgerDatabase.appConnection()) {
       conn.setAutoCommit(false);
       UUID cash = insertAccount(conn, "cash", "ASSET", "CAD", "DENY");
@@ -115,13 +115,13 @@ class PostingBalanceTest extends LedgerIntegrationTest {
   }
 
   @Test
-  void gappedLineNumbersFailAtCommit() throws Exception {
+  void gappedEntryNumbersFailAtCommit() throws Exception {
     try (Connection conn = LedgerDatabase.appConnection()) {
       conn.setAutoCommit(false);
       UUID cash = insertAccount(conn, "cash", "ASSET", "CAD", "ALLOW");
       UUID capital = insertAccount(conn, "capital", "EQUITY", "CAD", "ALLOW");
       UUID mid = insertAccount(conn, "mid", "EXPENSE", "CAD", "ALLOW");
-      UUID posting = insertPosting(conn, newKey(), "STANDARD", null, "CAD", 3, "gapped lines");
+      UUID posting = insertPosting(conn, newKey(), "STANDARD", null, "CAD", 3, "gapped entries");
       insertEntry(conn, posting, 1, cash, "CAD", "DEBIT", 100);
       insertEntry(conn, posting, 2, mid, "CAD", "DEBIT", 50);
       insertEntry(conn, posting, 4, capital, "CAD", "CREDIT", 150);

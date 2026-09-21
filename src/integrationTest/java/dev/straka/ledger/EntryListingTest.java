@@ -23,7 +23,7 @@ import org.springframework.web.client.RestClient;
 
 /**
  * Account statement listing: immutable keyset order across pages, exact page contents, and the
- * 400/404 contract. Seeds five two-line postings (ten cash lines) through the real posting path.
+ * 400/404 contract. Seeds five two-entry postings (ten cash entries) through the real posting path.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class EntryListingTest extends LedgerIntegrationTest {
@@ -76,7 +76,7 @@ class EntryListingTest extends LedgerIntegrationTest {
     Map<String, Object> body = new HashMap<>();
     body.put("description", "funding " + key);
     body.put("effectiveAt", Instant.now().toString());
-    body.put("lines", List.of(debit, credit));
+    body.put("entries", List.of(debit, credit));
     ResponseEntity<Map> response =
         rest.post()
             .uri("/v1/postings")
@@ -132,7 +132,7 @@ class EntryListingTest extends LedgerIntegrationTest {
     } while (cursor != null);
 
     assertEquals(List.of("100", "200", "300", "400", "500"), amounts);
-    assertEquals(2, pages, "ten lines at limit 4 walk two full pages plus a short tail");
+    assertEquals(2, pages, "ten entries at limit 4 walk two full pages plus a short tail");
     assertEquals(5, kinds.size());
   }
 
@@ -186,7 +186,7 @@ class EntryListingTest extends LedgerIntegrationTest {
 
   @Test
   @SuppressWarnings("unchecked")
-  void reversalLinesAppearWithKind() {
+  void reversalEntriesAppearWithKind() {
     String tag = UUID.randomUUID().toString().substring(0, 8);
     UUID cash = postAccount("cash-" + tag, "ASSET");
     UUID capital = postAccount("capital-" + tag, "EQUITY");
@@ -203,7 +203,7 @@ class EntryListingTest extends LedgerIntegrationTest {
     Map<String, Object> spend = new HashMap<>();
     spend.put("description", "spend " + tag);
     spend.put("effectiveAt", Instant.now().toString());
-    spend.put("lines", List.of(debit, credit));
+    spend.put("entries", List.of(debit, credit));
     ResponseEntity<Map> created =
         rest.post()
             .uri("/v1/postings")
