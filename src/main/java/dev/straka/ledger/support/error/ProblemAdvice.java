@@ -23,9 +23,10 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 /**
- * The one place where errors become HTTP. Every body is {@code application/problem+json} with a stable
- * machine-readable {@code code}, a safe detail, the instance, and a trace id. SQL, constraint text,
- * credentials, and stack traces never leave the process.
+ * The one place where errors become HTTP responses. Every error body uses {@code
+ * application/problem+json} with a stable machine-readable {@code code}, a safe detail, the
+ * instance, and a trace id. SQL, constraint text, credentials, and stack traces never leave the
+ * process.
  */
 @RestControllerAdvice
 public class ProblemAdvice {
