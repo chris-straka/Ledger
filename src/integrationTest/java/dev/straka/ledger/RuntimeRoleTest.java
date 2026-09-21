@@ -32,7 +32,7 @@ class RuntimeRoleTest extends LedgerIntegrationTest {
       while (rs.next()) {
         versions.append(rs.getString(1)).append(',');
       }
-      assertEquals("1,2,3,4,5,", versions.toString());
+      assertEquals("1,", versions.toString());
     }
   }
 

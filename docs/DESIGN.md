@@ -55,7 +55,7 @@ count match, exact `1..n` entries, ≥2 accounts, zero signed sum, DENY balances
 immutable declared `entry_count` seals the posting: even a later balanced pair breaks the count.
 
 - Rejected: row CHECKs as cross-row proof; insert-only tables without the count seal (appendable).
-- Proof: `V3__posting_triggers.sql`; `PostingBalanceTest`, `PostingClosureTest`;
+- Proof: `V1__journal_schema.sql` (deferred triggers); `PostingBalanceTest`, `PostingClosureTest`;
   `scripts/demo.sh` step 6. IDs default to `uuidv7()`, which keeps the PK index
   append-ordered (the heap itself stays unordered — an index is not the table).
 
@@ -95,7 +95,7 @@ an owner can dismantle all of this; concurrent-overdraft safety further assumes 
 protocol, which a raw-SQL caller can sidestep. Credentials are not a public API.
 
 - Rejected: one superuser identity everywhere; app-run migrations.
-- Proof: `V2__runtime_grants.sql`, `docker/postgres/00-roles.sh`, one-shot Compose `migrate`,
+- Proof: `V1__journal_schema.sql` (grants), `docker/postgres/00-roles.sh`, one-shot Compose `migrate`,
   `spring.flyway.enabled: false`; `ImmutabilityTest`, `RuntimeRoleTest`.
 
 ## 9. Exact reversal rather than edit/delete

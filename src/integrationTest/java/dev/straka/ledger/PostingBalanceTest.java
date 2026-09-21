@@ -125,7 +125,7 @@ class PostingBalanceTest extends LedgerIntegrationTest {
       insertEntry(conn, posting, 1, cash, "CAD", "DEBIT", 100);
       insertEntry(conn, posting, 2, mid, "CAD", "DEBIT", 50);
       insertEntry(conn, posting, 4, capital, "CAD", "CREDIT", 150);
-      assertCommitFailsWith(conn, "23514", "ledger_posting_lines");
+      assertCommitFailsWith(conn, "23514", "ledger_posting_entries");
       conn.rollback();
     }
   }
