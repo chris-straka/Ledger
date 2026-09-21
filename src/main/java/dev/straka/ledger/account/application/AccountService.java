@@ -32,6 +32,8 @@ public class AccountService {
     return accounts.requireById(id);
   }
 
+  // Keyset pagination: the cursor is the last row seen and the query resumes after it
+  // with a row-value comparison — no OFFSET, so concurrent inserts never shift a page.
   public EntryPage entries(AccountId id, String cursorRaw, String limitRaw) {
     accounts.requireById(id);
 
@@ -49,14 +51,15 @@ public class AccountService {
 
     List<EntryPage.Entry> page = new ArrayList<>();
     String nextCursor = null;
-    for (int i = 0; i < Math.min(limit, rows.size()); i++) {
+    for (int i = 0; i < Math.min(limit, rows.size()); i++)
       page.add(EntryPage.Entry.from(rows.get(i)));
-    }
+
     if (rows.size() > limit) {
       AccountRepository.AccountEntry last = rows.get(limit - 1);
       nextCursor =
           new EntryCursor(last.recordedAt(), last.postingId(), last.entryNumber()).encode();
     }
+
     return new EntryPage(List.copyOf(page), nextCursor);
   }
 
