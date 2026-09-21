@@ -24,9 +24,9 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 /**
  * The one place where errors become HTTP responses. Every error body uses {@code
- * application/problem+json} with a stable machine-readable {@code code} (for client handling rather
- * than parsing the message), a safe detail (human-readable and safe to expose), an instance (stable
- * URI for the error type), and a trace id (per-response log-correlation value).
+ * application/problem+json} with a stable {@code code} for client handling, a detail saying what
+ * failed for this request without exposing internals, an instance URI naming the error type, and a
+ * trace id for matching the response to server logs.
  */
 @RestControllerAdvice
 public class ProblemAdvice {
