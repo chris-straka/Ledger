@@ -14,14 +14,16 @@ import java.net.URI;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 /**
- * One place where errors become HTTP. Every body is {@code application/problem+json} with a stable
+ * The one place where errors become HTTP. Every body is {@code application/problem+json} with a stable
  * machine-readable {@code code}, a safe detail, the instance, and a trace id. SQL, constraint text,
  * credentials, and stack traces never leave the process.
  */
@@ -93,17 +95,16 @@ public class ProblemAdvice {
   }
 
   @ExceptionHandler(PostingRetryExhaustedException.class)
-  public org.springframework.http.ResponseEntity<ProblemDetail> exhausted(
-      PostingRetryExhaustedException e) {
+  public ResponseEntity<ProblemDetail> exhausted(PostingRetryExhaustedException e) {
     ProblemDetail body =
         problem(HttpStatus.SERVICE_UNAVAILABLE, "RETRY_EXHAUSTED", e.getMessage(), e);
-    return org.springframework.http.ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+    return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
         .header("Retry-After", "1")
         .body(body);
   }
 
-  @ExceptionHandler(org.springframework.web.bind.MissingRequestHeaderException.class)
-  public ProblemDetail missingHeader(org.springframework.web.bind.MissingRequestHeaderException e) {
+  @ExceptionHandler(MissingRequestHeaderException.class)
+  public ProblemDetail missingHeader(MissingRequestHeaderException e) {
     return problem(HttpStatus.BAD_REQUEST, "MALFORMED_REQUEST", "Idempotency-Key is required", e);
   }
 
