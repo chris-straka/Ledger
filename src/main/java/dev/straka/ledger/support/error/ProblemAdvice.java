@@ -49,12 +49,12 @@ public class ProblemAdvice {
 
   @ExceptionHandler(InvalidAccountException.class)
   public ProblemDetail accountInvalid(InvalidAccountException e) {
-    return problem(HttpStatus.UNPROCESSABLE_ENTITY, "ACCOUNT_INVALID", e.getMessage(), e);
+    return problem(HttpStatus.UNPROCESSABLE_CONTENT, "ACCOUNT_INVALID", e.getMessage(), e);
   }
 
   @ExceptionHandler(InvalidPostingException.class)
   public ProblemDetail postingInvalid(InvalidPostingException e) {
-    return problem(HttpStatus.UNPROCESSABLE_ENTITY, "POSTING_INVALID", e.getMessage(), e);
+    return problem(HttpStatus.UNPROCESSABLE_CONTENT, "POSTING_INVALID", e.getMessage(), e);
   }
 
   @ExceptionHandler(AccountNotFoundException.class)
