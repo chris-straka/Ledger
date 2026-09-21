@@ -25,7 +25,7 @@ public class AccountService {
 
   public Account create(String code, String name, String currency, String type, String policy) {
     AccountType accountType = parseType(type);
-    OverdraftPolicy overdraft = parsePolicy(policy);
+    OverdraftPolicy overdraft = parseOverdraftPolicy(policy);
     CurrencyCode currencyCode = new CurrencyCode(currency);
     return accounts.create(code, name, currencyCode, accountType, overdraft);
   }
@@ -91,7 +91,7 @@ public class AccountService {
     }
   }
 
-  private static OverdraftPolicy parsePolicy(String raw) {
+  private static OverdraftPolicy parseOverdraftPolicy(String raw) {
     try {
       return OverdraftPolicy.valueOf(raw);
     } catch (IllegalArgumentException | NullPointerException e) {
