@@ -19,7 +19,7 @@ Two SQL views (v_account_balance, v_conservation) and one table, no drift is pos
 
 1. Storing a signed amount per entry instead of an unsigned amount with a side
 
-- A signed amount merges side and magnitude into one number: +100 might be a debit of 100 or a credit of −100. The schema records the same value either way, so no check — not "debits equal credits", not the normal-side balance math — has anything left to grip.
+- A signed amount merges side and magnitude into one number: no check can tell whether an entry landed on the right side.
 - A withdrawal's legs negated (+100/−100 booked as −100/+100) still totals zero: the books now describe a deposit, and no arithmetic check notices.
 - Two mistakes canceling out: the sign flipped on one leg, an equal-and-opposite error on another — the posting totals zero with both entries wrong.
 
