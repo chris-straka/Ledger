@@ -43,17 +43,16 @@ Totals use `BigInteger` and PG `sum(bigint)` -> text, so no overflows/rounds.
 
 - Past 2^53, common clients round JSON numbers.
 
-2. Summing debit and credit totals in `long` to judge balance
+2. Summing debit and credit totals with `long` 
 
-- With up to 100 entries each near `Long.MAX`, the sums overflow and wrap, so an unbalanced posting can read as balanced. Totals use `BigInteger` instead.
+- Entries near `Long.MAX` would overflow and wrap
 
 ## 3. Derived balances vs. a materialized projection
 
-`GET .../balance` adds up the account's entries in a single SQL statement on every read. 
-A stored balance is stretch goal 1 in `TODO.md`. 
-
-It waits on a benchmark showing derived reads are the bottleneck. 
-Even then the journal stays authoritative, with a standing proof that the stored value matches the derived one.
+`GET .../balance` adds up the account's entries on every read. 
+The alternative is a stored balance column, written in the same transaction as the entries. 
+The journal would stay authoritative, with a standing proof that the stored value matches the derived one. 
+That is stretch goal 1 in `TODO.md`. It waits on a benchmark showing derived reads are the bottleneck.
 
 - `AccountRepository` proves the balance comes from entries in one statement.
 - `AccountApiTest` proves the endpoint returns that value.
