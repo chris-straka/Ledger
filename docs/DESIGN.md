@@ -1,16 +1,5 @@
 # DESIGN
 
-How this ledger works and why it is shaped this way. Each section states one decision, the
-test that proves it holds, and the alternative that was dropped. Three terms carry the whole
-doc: a **posting** is a small set of **entries** that moves money, an **entry** records one leg
-(debit or credit) against one account, and the **journal** is the append-only store of all of
-them. The one rule above all others: every posting must balance (debits equal credits), so the
-whole ledger always totals zero.
-
-Worked example (from `scripts/demo.sh`): opening capital of 10,000 is one posting with two
-entries — cash DEBIT 10000, capital CREDIT 10000. Debits equal credits, so it commits; cash
-then reads 10000 and capital reads 10000. Every section below defends one part of that flow.
-
 ## 1. Signed journal arithmetic vs. normal-side account balances
 
 Entries store an unsigned amount plus a side (debit/credit).
@@ -111,8 +100,8 @@ A posting is several rows that are only valid together, but a row CHECK can only
 row — it cannot judge "do these entries balance?". So integrity is enforced by a constraint
 trigger that runs at commit time, after all of the posting's rows are in: it checks the entry
 count matches the declared `entry_count`, the entries are numbered exactly `1..n`, at least
-two accounts take part, the signed sum is zero, DENY accounts are not overdrawn, and reversal
-rules hold. The declared `entry_count` is immutable, which seals the posting shut: even a
+two accounts take part, the signed sum is zero, accounts configured to reject overdrafts
+(DENY — see §6) are not overdrawn, and reversal rules hold. The declared `entry_count` is immutable, which seals the posting shut: even a
 later, perfectly balanced pair of entries breaks the count and fails. IDs default to
 `uuidv7()`, which keeps the primary-key index append-ordered (the heap itself stays unordered
 — an index is not the table).
@@ -134,9 +123,10 @@ later, perfectly balanced pair of entries breaks the count and fails. IDs defaul
 
 ## 6. Serializable isolation, write skew, retries, hot accounts
 
-The anomaly this section exists for is overdraft write skew. Picture a DENY account holding
-10,000: two transactions each read the balance, each approves spending 8,000 through its own
-new rows, and at REPEATABLE READ both commit — leaving −6,000. Neither transaction saw the
+The anomaly this section exists for is overdraft write skew. Each account is configured to
+either reject overdrafts (DENY) or allow them (ALLOW). Picture a DENY account holding 10,000:
+two transactions each read the balance, each approves spending 8,000 through its own new
+rows, and at REPEATABLE READ both commit — leaving −6,000. Neither transaction saw the
 other's rows, so no check fired. That failure is demonstrated by a test, not theorized.
 Production posts at SERIALIZABLE, so PostgreSQL aborts one of the two attempts (SQLSTATE
 40001) and the whole transaction — the overdraft decision included — retries from scratch
