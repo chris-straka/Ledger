@@ -49,10 +49,12 @@ Totals use `BigInteger` and PG `sum(bigint)` -> text, so no overflows/rounds.
 
 ## 3. Derived balances vs. a materialized projection
 
-`GET .../balance` adds up the account's entries on every read. 
-The alternative is a stored balance column, written in the same transaction as the entries. 
-The journal would stay authoritative, with a standing proof that the stored value matches the derived one. 
-That is stretch goal 1 in `TODO.md`. It waits on a benchmark showing derived reads are the bottleneck.
+Currently, `GET .../balance` adds up the account's entries on every read. 
+
+The alternative is a stored balance column, written in the same tx as the entries. 
+The journal would stay authoritative, and I'd need to prove that the stored value matches the derived one. 
+It's called a materialized projection because the balance is worked out once and stored, instead of added up fresh on every read.
+It waits on a benchmark showing derived reads are the bottleneck.
 
 - `AccountRepository` proves the balance comes from entries in one statement.
 - `AccountApiTest` proves the endpoint returns that value.
