@@ -24,9 +24,9 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 /**
  * The one place where errors become HTTP responses. Every error body uses {@code
- * application/problem+json} with a stable {@code code} for client handling, a detail saying what
- * failed for this request without exposing internals, an instance URI naming the error type, and a
- * trace id for matching the response to server logs.
+ * application/problem+json} with a stable {@code code} and an instance URI of that error type for
+ * client handling, a detail saying what failed for this request without exposing internals, and a
+ * trace id for matching this specific response to server logs.
  */
 @RestControllerAdvice
 public class ProblemAdvice {
@@ -50,6 +50,16 @@ public class ProblemAdvice {
     return problem(HttpStatus.BAD_REQUEST, "MALFORMED_REQUEST", "malformed pagination", e);
   }
 
+  @ExceptionHandler(InvalidIdempotencyKeyException.class)
+  public ProblemDetail badKey(InvalidIdempotencyKeyException e) {
+    return problem(HttpStatus.BAD_REQUEST, "MALFORMED_REQUEST", e.getMessage(), e);
+  }
+
+  @ExceptionHandler(MissingRequestHeaderException.class)
+  public ProblemDetail missingHeader(MissingRequestHeaderException e) {
+    return problem(HttpStatus.BAD_REQUEST, "MALFORMED_REQUEST", "Idempotency-Key is required", e);
+  }
+
   @ExceptionHandler(InvalidAccountException.class)
   public ProblemDetail accountInvalid(InvalidAccountException e) {
     return problem(HttpStatus.UNPROCESSABLE_CONTENT, "ACCOUNT_INVALID", e.getMessage(), e);
@@ -65,19 +75,14 @@ public class ProblemAdvice {
     return problem(HttpStatus.NOT_FOUND, "ACCOUNT_NOT_FOUND", e.getMessage(), e);
   }
 
-  @ExceptionHandler(AccountConflictException.class)
-  public ProblemDetail conflict(AccountConflictException e) {
-    return problem(HttpStatus.CONFLICT, "ACCOUNT_CONFLICT", e.getMessage(), e);
-  }
-
-  @ExceptionHandler(InvalidIdempotencyKeyException.class)
-  public ProblemDetail badKey(InvalidIdempotencyKeyException e) {
-    return problem(HttpStatus.BAD_REQUEST, "MALFORMED_REQUEST", e.getMessage(), e);
-  }
-
   @ExceptionHandler(PostingNotFoundException.class)
   public ProblemDetail postingNotFound(PostingNotFoundException e) {
     return problem(HttpStatus.NOT_FOUND, "POSTING_NOT_FOUND", e.getMessage(), e);
+  }
+
+  @ExceptionHandler(AccountConflictException.class)
+  public ProblemDetail conflict(AccountConflictException e) {
+    return problem(HttpStatus.CONFLICT, "ACCOUNT_CONFLICT", e.getMessage(), e);
   }
 
   @ExceptionHandler(OverdraftRejectedException.class)
@@ -102,11 +107,6 @@ public class ProblemAdvice {
     return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
         .header("Retry-After", "1")
         .body(body);
-  }
-
-  @ExceptionHandler(MissingRequestHeaderException.class)
-  public ProblemDetail missingHeader(MissingRequestHeaderException e) {
-    return problem(HttpStatus.BAD_REQUEST, "MALFORMED_REQUEST", "Idempotency-Key is required", e);
   }
 
   private static ProblemDetail problem(HttpStatus status, String code, String detail, Exception e) {
