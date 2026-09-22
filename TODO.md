@@ -93,8 +93,6 @@ backlog, not a history of completed work.
 - Materialized balance projection, only after a benchmark proves derived reads are the
   problem. Updated in the posting transaction with a standing equality proof; the journal
   stays authoritative.
-- Transactional outbox: immutable event intent with the posting, at-least-once publish,
-  stable event IDs, crash/replay proof. Kafka enters here, never before.
 - Property-based state-machine tests (jqwik): posting sequences, reversals, replays, with
   invariants audited after each committed step.
 - FX postings: two independently balanced currency legs joined by an exchange op, exact rate,

@@ -46,7 +46,7 @@ Say these plainly in the README; do not let the code drift toward them.
 - No payment provider integration, card authorisation, or settlement. This is the book of record.
 - No multi-node consensus. One Postgres, one source of truth.
 - No regulatory or compliance claim of any kind.
-- No streaming pipeline. Kafka is peripheral here and belongs only in the outbox stretch goal.
+- No streaming pipeline. Kafka lives in the separate outbox project, never here.
 
 ## Comments and design notes
 
