@@ -20,8 +20,7 @@ Two SQL views (v_account_balance, v_conservation) and one table, no drift is pos
 1. Storing a signed amount per entry instead of an unsigned amount with a side
 
 - A signed amount hides the side inside the number, so the database cannot check it.
-- Flip the signs on both legs and the posting still totals zero. Nothing notices it now describes a deposit.
-- Two mistakes can cancel out: a flipped sign on one leg and an opposite error on another. The posting totals zero with both entries wrong.
+- Mistakes can cancel out: flip the signs on both legs and the posting still totals zero. Nothing notices it now describes a deposit.
 
 2. A mutable balance column instead of computing balances from entries on read
 
