@@ -1,7 +1,7 @@
 # DESIGN.md — ledger decision records
 
-Each record names the choice, the rejected alternative, and the executable proof. Paths are
-relative to the repo root.
+Each record names the choice, the rejected alternative, and the executable proof. 
+Paths are relative to the repo root.
 
 ## 1. Signed journal arithmetic vs. normal-side account balances
 
@@ -69,12 +69,12 @@ explicit 503. No JVM locks (they cannot protect two instances).
 
 - Rejected: READ COMMITTED + `SELECT ... FOR UPDATE` (documented as the likely tuning if
   serialization pressure ever measures too high) and unbounded retries.
-- Rejected: a third retry shape — async submit, where the API answers HTTP 202 at once,
-  queues the posting, and has the client poll for the outcome. The two live options are
-  client-side retry-after and the server-side synchronous retry above; async would free the
-  request thread during backoff, but the wait it avoids is bounded at ~600ms worst case, while
-  the queue buys lasting hazards: out-of-order commits, redelivery doubles, and §7's key, which
-  rediscovers one request's winner, cannot collapse two queued copies of the same request.
+- Rejected: async submit — answer HTTP 202 at once, queue the posting, have the client
+  poll for the outcome. The live shapes are client-side retry (the 503's Retry-After invites the
+  caller to retry later) and server-side retry (this section: the service retries the commit with
+  full-jitter backoff, bounded at ~600ms worst case). Async would free the request thread during
+  those retries, but buys lasting hazards: out-of-order commits, redelivery doubles, and §7's key,
+  which rediscovers one request's winner, cannot collapse two queued copies of the same request.
 - Proof: `PostingService`; `ConcurrencyTest.repeatableReadLosesTheOverdraftRace` (shows the hole)
   and `overdraftRaceCommitsOneAndRejectsOne` (shows the fix, with a recorded retry);
   `AttemptRecorder`.
