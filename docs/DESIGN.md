@@ -19,11 +19,13 @@ Two SQL views (v_account_balance, v_conservation) and one table, no drift is pos
 
 1. Storing a signed amount per entry instead of an unsigned amount with a side
 
-- A withdrawal written as a negative credit instead of a debit: same signed total, wrong side, invisible.
+- A sign folds two facts into one field: which side and how much. A debit of 100 and a credit of −100 total the same, so the schema can no longer tell them apart — and "debits equal credits" becomes unenforceable.
+- A withdrawal booked as a negative credit instead of a debit: same signed total, wrong side, invisible to every check.
 - Two mistakes canceling out: wrong side on one entry, wrong sign on another — the books still balance, both entries wrong.
 
-2. Could've used a mutable balance column instead of computing it from entries on read.
-Doing this would create a 2nd source of truth to keep 
+2. A mutable balance column instead of computing balances from entries on read
+
+- A second source of truth to keep in sync with the journal (see §3).
 
 ## 2. Integer minor units and overflow-safe aggregation
 
