@@ -54,10 +54,10 @@ class ConcurrencyTest extends LedgerIntegrationTest {
 
   @DynamicPropertySource
   static void datasource(DynamicPropertyRegistry registry) {
-    LedgerDatabase.start();
-    registry.add("spring.datasource.url", () -> LedgerDatabase.ledgerUrl());
-    registry.add("spring.datasource.username", () -> LedgerDatabase.APP);
-    registry.add("spring.datasource.password", () -> LedgerDatabase.APP_PASSWORD);
+    LedgerDB.start();
+    registry.add("spring.datasource.url", () -> LedgerDB.ledgerUrl());
+    registry.add("spring.datasource.username", () -> LedgerDB.APP);
+    registry.add("spring.datasource.password", () -> LedgerDB.APP_PASSWORD);
   }
 
   @SuppressWarnings("unchecked")
@@ -163,7 +163,7 @@ class ConcurrencyTest extends LedgerIntegrationTest {
     }
     pool.shutdown();
     assertEquals("5000", balanceOf(cash));
-    try (Connection conn = LedgerDatabase.appConnection()) {
+    try (Connection conn = LedgerDB.appConnection()) {
       assertEquals(writers, tableCount(conn, "ledger_posting"));
       assertEquals(writers * 2L, tableCount(conn, "ledger_entry"));
     }
@@ -213,7 +213,7 @@ class ConcurrencyTest extends LedgerIntegrationTest {
     pool.shutdown();
     assertEquals(1, created, "exactly one payload must win the key");
     assertEquals(racers - 1, conflicts, "every other payload must conflict");
-    try (Connection conn = LedgerDatabase.appConnection()) {
+    try (Connection conn = LedgerDB.appConnection()) {
       assertEquals(1, tableCount(conn, "ledger_posting"));
     }
   }
@@ -280,15 +280,14 @@ class ConcurrencyTest extends LedgerIntegrationTest {
 
   @Test
   void repeatableReadLosesTheOverdraftRace() throws Exception {
-    // Test-only REPEATABLE READ harness in the disposable anomaly database. Both
+    // Test-only REPEATABLE READ harness in the disposable anomaly DB. Both
     // transactions read 10,000, both approve 8,000, both commit — the deferred
     // trigger cannot save them because each commit-time check runs under a
     // snapshot that predates the rival commit. Final state: −6,000 on a DENY
     // account. Production runs SERIALIZABLE precisely so this schedule aborts.
     UUID cash;
     UUID capital;
-    try (Connection setup =
-        LedgerDatabase.anomalyConnection(LedgerDatabase.OWNER, LedgerDatabase.OWNER_PASSWORD)) {
+    try (Connection setup = LedgerDB.anomalyConnection(LedgerDB.OWNER, LedgerDB.OWNER_PASSWORD)) {
       cash = insertAccount(setup, "cash", "ASSET", "CAD", "DENY");
       capital = insertAccount(setup, "capital", "EQUITY", "CAD", "DENY");
       UUID opening = insertPosting(setup, newKey(), "STANDARD", null, "CAD", 2, "opening");
@@ -297,10 +296,8 @@ class ConcurrencyTest extends LedgerIntegrationTest {
       setup.commit();
     }
 
-    Connection first =
-        LedgerDatabase.anomalyConnection(LedgerDatabase.APP, LedgerDatabase.APP_PASSWORD);
-    Connection second =
-        LedgerDatabase.anomalyConnection(LedgerDatabase.APP, LedgerDatabase.APP_PASSWORD);
+    Connection first = LedgerDB.anomalyConnection(LedgerDB.APP, LedgerDB.APP_PASSWORD);
+    Connection second = LedgerDB.anomalyConnection(LedgerDB.APP, LedgerDB.APP_PASSWORD);
     try {
       first.setTransactionIsolation(Connection.TRANSACTION_REPEATABLE_READ);
       second.setTransactionIsolation(Connection.TRANSACTION_REPEATABLE_READ);
@@ -320,8 +317,7 @@ class ConcurrencyTest extends LedgerIntegrationTest {
       first.commit();
       second.commit();
 
-      try (Connection check =
-          LedgerDatabase.anomalyConnection(LedgerDatabase.OWNER, LedgerDatabase.OWNER_PASSWORD)) {
+      try (Connection check = LedgerDB.anomalyConnection(LedgerDB.OWNER, LedgerDB.OWNER_PASSWORD)) {
         assertEquals(-6_000, readBalance(check, cash));
       }
     } finally {

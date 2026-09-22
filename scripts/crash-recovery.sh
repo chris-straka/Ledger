@@ -3,10 +3,10 @@
 # with SIGKILL at two exact windows and proves transaction atomicity plus replay
 # recovery. Uses its own Compose project (-p), own ports, and own volumes; never
 # touches the developer's normal `ledger` project data. Exits nonzero on any
-# false claim, timeout, empty database, or nonzero conservation sum.
+# false claim, timeout, empty DB, or nonzero conservation sum.
 #
 # Proves: application-crash atomicity and ambiguous-response recovery.
-# Does not prove: PostgreSQL durability under a database kill (separate test).
+# Does not prove: PostgreSQL durability under a DB kill (separate test).
 set -euo pipefail
 
 PROJECT="ledger-crash"
@@ -132,7 +132,7 @@ ID1=$(json_field postingId)
 [ "$(db 'SELECT COUNT(*) FROM ledger_entry;')" = "4" ] \
   || fail "expected 4 entries (2+2)"
 ID2=$(db "SELECT id FROM ledger_posting WHERE idempotency_key = 'crash-key-2';")
-[ "$ID1" = "$ID2" ] || fail "replay returned $ID1 but the database holds $ID2"
+[ "$ID1" = "$ID2" ] || fail "replay returned $ID1 but the DB holds $ID2"
 
 echo "== final non-empty conservation audit"
 [ "$(db 'SELECT COUNT(*) FROM ledger_posting;')" = "2" ] || fail "expected 2 postings"

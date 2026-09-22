@@ -29,7 +29,7 @@ class OverdraftTest extends LedgerIntegrationTest {
 
   @Test
   void denyAccountRejectsOverdraftAtCommit() throws Exception {
-    try (Connection conn = LedgerDatabase.appConnection()) {
+    try (Connection conn = LedgerDB.appConnection()) {
       conn.setAutoCommit(false);
       UUID cash = insertAccount(conn, "cash", "ASSET", "CAD", "DENY");
       UUID capital = insertAccount(conn, "capital", "EQUITY", "CAD", "DENY");
@@ -53,7 +53,7 @@ class OverdraftTest extends LedgerIntegrationTest {
 
   @Test
   void exactSpendToZeroIsAllowed() throws Exception {
-    try (Connection conn = LedgerDatabase.appConnection()) {
+    try (Connection conn = LedgerDB.appConnection()) {
       conn.setAutoCommit(false);
       UUID cash = insertAccount(conn, "cash", "ASSET", "CAD", "DENY");
       UUID capital = insertAccount(conn, "capital", "EQUITY", "CAD", "DENY");
@@ -75,7 +75,7 @@ class OverdraftTest extends LedgerIntegrationTest {
 
   @Test
   void allowAccountPermitsNegativeBalance() throws Exception {
-    try (Connection conn = LedgerDatabase.appConnection()) {
+    try (Connection conn = LedgerDB.appConnection()) {
       conn.setAutoCommit(false);
       UUID cash = insertAccount(conn, "flex-cash", "ASSET", "CAD", "ALLOW");
       UUID capital = insertAccount(conn, "flex-capital", "EQUITY", "CAD", "ALLOW");

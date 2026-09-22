@@ -1,5 +1,5 @@
 #!/bin/sh
-# Fresh-cluster role bootstrap only. Runs once, at first database initialization,
+# Fresh-cluster role bootstrap only. Runs once, at first DB initialization,
 # inside the postgres entrypoint. Schema, tables, and table grants are Flyway-owned
 # (Phase 2 migrations) — this script creates only the runtime role so the app can
 # connect with least privilege.

@@ -54,7 +54,7 @@ bin/
 # Local secrets/config
 secrets.json
 
-# Local database backups (dumps land here; never committed)
+# Local DB backups (dumps land here; never committed)
 backups/
 
 # Private interview prep (answers stay on this machine)

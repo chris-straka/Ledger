@@ -15,7 +15,7 @@ class PostingBalanceTest extends LedgerIntegrationTest {
 
   @Test
   void balancedTwoEntryPostingCommits() throws Exception {
-    try (Connection conn = LedgerDatabase.appConnection()) {
+    try (Connection conn = LedgerDB.appConnection()) {
       conn.setAutoCommit(false);
       UUID cash = insertAccount(conn, "cash", "ASSET", "CAD", "DENY");
       UUID capital = insertAccount(conn, "capital", "EQUITY", "CAD", "DENY");
@@ -30,7 +30,7 @@ class PostingBalanceTest extends LedgerIntegrationTest {
 
   @Test
   void balancedMultiEntryPostingCommits() throws Exception {
-    try (Connection conn = LedgerDatabase.appConnection()) {
+    try (Connection conn = LedgerDB.appConnection()) {
       conn.setAutoCommit(false);
       UUID cash = insertAccount(conn, "cash", "ASSET", "CAD", "DENY");
       UUID supplies = insertAccount(conn, "supplies", "EXPENSE", "CAD", "DENY");
@@ -47,7 +47,7 @@ class PostingBalanceTest extends LedgerIntegrationTest {
   @Test
   void hugeAmountsNearLongLimitCommitExactly() throws Exception {
     long huge = 4_000_000_000_000_000_000L;
-    try (Connection conn = LedgerDatabase.appConnection()) {
+    try (Connection conn = LedgerDB.appConnection()) {
       conn.setAutoCommit(false);
       UUID cash = insertAccount(conn, "cash", "ASSET", "CAD", "ALLOW");
       UUID capital = insertAccount(conn, "capital", "EQUITY", "CAD", "ALLOW");
@@ -61,7 +61,7 @@ class PostingBalanceTest extends LedgerIntegrationTest {
 
   @Test
   void unbalancedPostingFailsAtCommit() throws Exception {
-    try (Connection conn = LedgerDatabase.appConnection()) {
+    try (Connection conn = LedgerDB.appConnection()) {
       conn.setAutoCommit(false);
       UUID cash = insertAccount(conn, "cash", "ASSET", "CAD", "ALLOW");
       UUID capital = insertAccount(conn, "capital", "EQUITY", "CAD", "ALLOW");
@@ -76,7 +76,7 @@ class PostingBalanceTest extends LedgerIntegrationTest {
 
   @Test
   void zeroEntryHeaderFailsAtCommit() throws Exception {
-    try (Connection conn = LedgerDatabase.appConnection()) {
+    try (Connection conn = LedgerDB.appConnection()) {
       conn.setAutoCommit(false);
       insertAccount(conn, "cash", "ASSET", "CAD", "ALLOW");
       insertAccount(conn, "capital", "EQUITY", "CAD", "ALLOW");
@@ -89,7 +89,7 @@ class PostingBalanceTest extends LedgerIntegrationTest {
 
   @Test
   void missingEntryFailsAtCommit() throws Exception {
-    try (Connection conn = LedgerDatabase.appConnection()) {
+    try (Connection conn = LedgerDB.appConnection()) {
       conn.setAutoCommit(false);
       UUID cash = insertAccount(conn, "cash", "ASSET", "CAD", "ALLOW");
       UUID capital = insertAccount(conn, "capital", "EQUITY", "CAD", "ALLOW");
@@ -103,7 +103,7 @@ class PostingBalanceTest extends LedgerIntegrationTest {
 
   @Test
   void singleAccountSelfCancelFailsAtCommit() throws Exception {
-    try (Connection conn = LedgerDatabase.appConnection()) {
+    try (Connection conn = LedgerDB.appConnection()) {
       conn.setAutoCommit(false);
       UUID cash = insertAccount(conn, "cash", "ASSET", "CAD", "ALLOW");
       UUID posting = insertPosting(conn, newKey(), "STANDARD", null, "CAD", 2, "self cancel");
@@ -116,7 +116,7 @@ class PostingBalanceTest extends LedgerIntegrationTest {
 
   @Test
   void gappedEntryNumbersFailAtCommit() throws Exception {
-    try (Connection conn = LedgerDatabase.appConnection()) {
+    try (Connection conn = LedgerDB.appConnection()) {
       conn.setAutoCommit(false);
       UUID cash = insertAccount(conn, "cash", "ASSET", "CAD", "ALLOW");
       UUID capital = insertAccount(conn, "capital", "EQUITY", "CAD", "ALLOW");

@@ -41,7 +41,7 @@ class PostingChecksTest extends LedgerIntegrationTest {
   @ParameterizedTest
   @ValueSource(longs = {0, -1, -9_999_999_999L})
   void nonPositiveAmountIsRejected(long amount) throws Exception {
-    try (Connection conn = LedgerDatabase.appConnection()) {
+    try (Connection conn = LedgerDB.appConnection()) {
       conn.setAutoCommit(false);
       UUID cash = insertAccount(conn, "cash", "ASSET", "CAD", "ALLOW");
       UUID capital = insertAccount(conn, "capital", "EQUITY", "CAD", "ALLOW");
@@ -61,7 +61,7 @@ class PostingChecksTest extends LedgerIntegrationTest {
 
   @Test
   void unknownSideIsRejected() throws Exception {
-    try (Connection conn = LedgerDatabase.appConnection()) {
+    try (Connection conn = LedgerDB.appConnection()) {
       conn.setAutoCommit(false);
       UUID cash = insertAccount(conn, "cash", "ASSET", "CAD", "ALLOW");
       UUID posting = insertPosting(conn, newKey(), "STANDARD", null, "CAD", 2, "bad side");
@@ -80,7 +80,7 @@ class PostingChecksTest extends LedgerIntegrationTest {
   @ParameterizedTest
   @ValueSource(ints = {0, 1, 101, 500})
   void outOfRangeDeclaredCountIsRejected(int count) throws Exception {
-    try (Connection conn = LedgerDatabase.appConnection()) {
+    try (Connection conn = LedgerDB.appConnection()) {
       conn.setAutoCommit(false);
       String key = newKey();
       SQLException failure =
@@ -99,7 +99,7 @@ class PostingChecksTest extends LedgerIntegrationTest {
 
   @Test
   void malformedIdempotencyKeyIsRejected() throws Exception {
-    try (Connection conn = LedgerDatabase.appConnection()) {
+    try (Connection conn = LedgerDB.appConnection()) {
       conn.setAutoCommit(false);
       String key = "has space and CAPS-ok-but-space";
       SQLException failure =
@@ -117,7 +117,7 @@ class PostingChecksTest extends LedgerIntegrationTest {
 
   @Test
   void blankDescriptionIsRejected() throws Exception {
-    try (Connection conn = LedgerDatabase.appConnection()) {
+    try (Connection conn = LedgerDB.appConnection()) {
       conn.setAutoCommit(false);
       String key = newKey();
       SQLException failure =
@@ -135,7 +135,7 @@ class PostingChecksTest extends LedgerIntegrationTest {
 
   @Test
   void shortFingerprintIsRejected() throws Exception {
-    try (Connection conn = LedgerDatabase.appConnection()) {
+    try (Connection conn = LedgerDB.appConnection()) {
       conn.setAutoCommit(false);
       String key = newKey();
       SQLException failure =
@@ -153,7 +153,7 @@ class PostingChecksTest extends LedgerIntegrationTest {
 
   @Test
   void standardPostingWithReversalTargetIsRejected() throws Exception {
-    try (Connection conn = LedgerDatabase.appConnection()) {
+    try (Connection conn = LedgerDB.appConnection()) {
       conn.setAutoCommit(false);
       String key = newKey();
       SQLException failure =
@@ -172,7 +172,7 @@ class PostingChecksTest extends LedgerIntegrationTest {
 
   @Test
   void accountTypeAllowlistsIsEnforced() throws Exception {
-    try (Connection conn = LedgerDatabase.appConnection()) {
+    try (Connection conn = LedgerDB.appConnection()) {
       conn.setAutoCommit(false);
       SQLException failure =
           statementFailure(

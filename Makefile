@@ -43,7 +43,7 @@ crash-test: ## isolated SIGKILL harness (own Compose project and volumes)
 verify: ## non-empty integrity audit (posting closure + per-currency conservation)
 	./scripts/verify.sh
 
-backup: ## pg_dump of the dev database (lands in backups/, gitignored; compose stack must be up)
+backup: ## pg_dump of the dev DB (lands in backups/, gitignored; compose stack must be up)
 	chmod +x scripts/*.sh
 	./scripts/backup.sh
 

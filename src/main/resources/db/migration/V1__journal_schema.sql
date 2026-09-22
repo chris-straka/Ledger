@@ -299,7 +299,7 @@ CREATE CONSTRAINT TRIGGER ledger_entry_deferred_check
 -- identity ledger_app: structural balance, currency, closure, and row
 -- immutability survive arbitrary runtime-role SQL, while concurrent overdraft
 -- safety additionally assumes the SERIALIZABLE posting protocol (see the
--- deferred triggers above). A database owner can deliberately alter these
+-- deferred triggers above). A DB owner can deliberately alter these
 -- protections; that is outside the boundary and stated, not hidden.
 
 -- Strip every path through history first, then grant back only what the

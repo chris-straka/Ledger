@@ -89,7 +89,7 @@ val integrationTest = tasks.register<Test>("integrationTest") {
     testClassesDirs = sourceSets["integrationTest"].output.classesDirs
     classpath = sourceSets["integrationTest"].runtimeClasspath
     useJUnitPlatform()
-    // Commit-sensitive tests share one database fixture; no parallel execution.
+    // Commit-sensitive tests share one DB fixture; no parallel execution.
     maxParallelForks = 1
 }
 

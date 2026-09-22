@@ -11,9 +11,9 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Invariant L3: no UPDATE or DELETE on journal tables, ever. The mechanism is revoked grants — the
- * runtime role holds only CONNECT, schema USAGE, SELECT, and narrow column INSERTs — so the
- * database refuses with SQLSTATE 42501. Immutable-row triggers backstop a mis-issued grant; the
- * owner path proves they exist.
+ * runtime role holds only CONNECT, schema USAGE, SELECT, and narrow column INSERTs — so the DB
+ * refuses with SQLSTATE 42501. Immutable-row triggers backstop a mis-issued grant; the owner path
+ * proves they exist.
  */
 class ImmutabilityTest extends LedgerIntegrationTest {
 
@@ -29,7 +29,7 @@ class ImmutabilityTest extends LedgerIntegrationTest {
   @Test
   void runtimeRoleCannotUpdateJournal() throws Exception {
     UUID posting;
-    try (Connection conn = LedgerDatabase.appConnection()) {
+    try (Connection conn = LedgerDB.appConnection()) {
       conn.setAutoCommit(false);
       UUID cash = insertAccount(conn, "cash", "ASSET", "CAD", "ALLOW");
       UUID capital = insertAccount(conn, "capital", "EQUITY", "CAD", "ALLOW");
@@ -38,7 +38,7 @@ class ImmutabilityTest extends LedgerIntegrationTest {
       insertEntry(conn, posting, 2, capital, "CAD", "CREDIT", 10_000);
       conn.commit();
     }
-    try (Connection conn = LedgerDatabase.appConnection()) {
+    try (Connection conn = LedgerDB.appConnection()) {
       conn.setAutoCommit(false);
       SQLException failure =
           statementFailure(
@@ -55,7 +55,7 @@ class ImmutabilityTest extends LedgerIntegrationTest {
 
   @Test
   void runtimeRoleCannotDeleteOrTruncateJournal() throws Exception {
-    try (Connection conn = LedgerDatabase.appConnection()) {
+    try (Connection conn = LedgerDB.appConnection()) {
       conn.setAutoCommit(false);
       UUID cash = insertAccount(conn, "cash", "ASSET", "CAD", "ALLOW");
       UUID capital = insertAccount(conn, "capital", "EQUITY", "CAD", "ALLOW");
@@ -91,7 +91,7 @@ class ImmutabilityTest extends LedgerIntegrationTest {
 
   @Test
   void runtimeRoleCannotSupplyGeneratedIds() throws Exception {
-    try (Connection conn = LedgerDatabase.appConnection()) {
+    try (Connection conn = LedgerDB.appConnection()) {
       conn.setAutoCommit(false);
       SQLException failure = null;
       try (Statement stmt = conn.createStatement()) {
@@ -113,7 +113,7 @@ class ImmutabilityTest extends LedgerIntegrationTest {
   @Test
   void immutableTriggerBackstopsTheOwner() throws Exception {
     // The owner bypasses grants, so this proves the trigger backstop exists behind them.
-    try (Connection conn = LedgerDatabase.ownerConnection()) {
+    try (Connection conn = LedgerDB.ownerConnection()) {
       conn.setAutoCommit(false);
       SQLException failure = null;
       try (Statement stmt = conn.createStatement()) {
@@ -126,7 +126,7 @@ class ImmutabilityTest extends LedgerIntegrationTest {
       assertTrue(failure == null, "owner currency write unexpectedly failed");
       conn.rollback();
     }
-    try (Connection conn = LedgerDatabase.appConnection()) {
+    try (Connection conn = LedgerDB.appConnection()) {
       conn.setAutoCommit(false);
       UUID cash = insertAccount(conn, "cash", "ASSET", "CAD", "ALLOW");
       UUID capital = insertAccount(conn, "capital", "EQUITY", "CAD", "ALLOW");
@@ -135,7 +135,7 @@ class ImmutabilityTest extends LedgerIntegrationTest {
       insertEntry(conn, posting, 2, capital, "CAD", "CREDIT", 10_000);
       conn.commit();
     }
-    try (Connection conn = LedgerDatabase.ownerConnection()) {
+    try (Connection conn = LedgerDB.ownerConnection()) {
       conn.setAutoCommit(false);
       SQLException failure = statementFailure(conn, "DELETE FROM ledger_entry");
       assertTrue(failure != null, "owner DELETE should hit the immutable trigger");
@@ -143,7 +143,7 @@ class ImmutabilityTest extends LedgerIntegrationTest {
       assertTrue(failure.getMessage().contains("ledger immutable"));
       conn.rollback();
     }
-    try (Connection conn = LedgerDatabase.appConnection()) {
+    try (Connection conn = LedgerDB.appConnection()) {
       assertEquals(2, tableCount(conn, "ledger_entry"));
     }
   }

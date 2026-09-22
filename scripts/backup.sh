@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Physical backup of the dev ledger database (custom-format dump). The dump is
+# Physical backup of the dev ledger DB (custom-format dump). The dump is
 # taken as ledger_owner so grants, triggers, and views restore intact; the
 # matching restore + audit lives in scripts/restore.sh. Dumps land in
 # backups/ (gitignored) and never in the repo.

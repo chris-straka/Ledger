@@ -26,11 +26,11 @@ class PostingClosureTest extends LedgerIntegrationTest {
   @Test
   void appendingOneEntryFailsAtCommit() throws Exception {
     UUID posting;
-    try (Connection conn = LedgerDatabase.appConnection()) {
+    try (Connection conn = LedgerDB.appConnection()) {
       conn.setAutoCommit(false);
       posting = commitOpening(conn);
     }
-    try (Connection conn = LedgerDatabase.appConnection()) {
+    try (Connection conn = LedgerDB.appConnection()) {
       conn.setAutoCommit(false);
       UUID supplies = insertAccount(conn, "supplies", "EXPENSE", "CAD", "ALLOW");
       insertEntry(conn, posting, 3, supplies, "CAD", "DEBIT", 500);
@@ -45,7 +45,7 @@ class PostingClosureTest extends LedgerIntegrationTest {
     UUID posting;
     UUID cash;
     UUID capital;
-    try (Connection conn = LedgerDatabase.appConnection()) {
+    try (Connection conn = LedgerDB.appConnection()) {
       conn.setAutoCommit(false);
       cash = insertAccount(conn, "cash", "ASSET", "CAD", "ALLOW");
       capital = insertAccount(conn, "capital", "EQUITY", "CAD", "ALLOW");
@@ -54,7 +54,7 @@ class PostingClosureTest extends LedgerIntegrationTest {
       insertEntry(conn, posting, 2, capital, "CAD", "CREDIT", 10_000);
       conn.commit();
     }
-    try (Connection conn = LedgerDatabase.appConnection()) {
+    try (Connection conn = LedgerDB.appConnection()) {
       conn.setAutoCommit(false);
       // Balanced on its own, but the posting declared exactly 2 entries.
       insertEntry(conn, posting, 3, cash, "CAD", "DEBIT", 500);

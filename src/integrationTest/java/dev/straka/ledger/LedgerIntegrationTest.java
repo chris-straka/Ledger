@@ -28,18 +28,18 @@ import org.junit.jupiter.api.BeforeEach;
 abstract class LedgerIntegrationTest {
 
   @BeforeAll
-  static void startDatabase() {
-    LedgerDatabase.start();
+  static void startDb() {
+    LedgerDB.start();
   }
 
   @BeforeEach
   void cleanJournal() throws SQLException {
-    LedgerDatabase.cleanJournal();
+    LedgerDB.cleanJournal();
   }
 
   @AfterEach
   void auditConservation() throws SQLException {
-    List<String> violations = LedgerDatabase.conservationViolations();
+    List<String> violations = LedgerDB.conservationViolations();
     assertTrue(violations.isEmpty(), () -> "conservation violated: " + violations);
   }
 

@@ -30,7 +30,7 @@ class CurrencyTest extends LedgerIntegrationTest {
 
   @Test
   void unsupportedAccountCurrencyIsRejected() throws Exception {
-    try (Connection conn = LedgerDatabase.appConnection()) {
+    try (Connection conn = LedgerDB.appConnection()) {
       conn.setAutoCommit(false);
       SQLException failure =
           statementFailure(
@@ -45,7 +45,7 @@ class CurrencyTest extends LedgerIntegrationTest {
 
   @Test
   void entryCurrencyMismatchWithPostingIsRejected() throws Exception {
-    try (Connection conn = LedgerDatabase.appConnection()) {
+    try (Connection conn = LedgerDB.appConnection()) {
       conn.setAutoCommit(false);
       UUID cash = insertAccount(conn, "cash", "ASSET", "CAD", "ALLOW");
       UUID capital = insertAccount(conn, "capital", "EQUITY", "CAD", "ALLOW");
@@ -66,7 +66,7 @@ class CurrencyTest extends LedgerIntegrationTest {
 
   @Test
   void entryCurrencyMismatchWithAccountIsRejected() throws Exception {
-    try (Connection conn = LedgerDatabase.appConnection()) {
+    try (Connection conn = LedgerDB.appConnection()) {
       conn.setAutoCommit(false);
       UUID usdCash = insertAccount(conn, "usd-cash", "ASSET", "USD", "ALLOW");
       UUID posting = insertPosting(conn, newKey(), "STANDARD", null, "CAD", 2, "account mismatch");
@@ -86,7 +86,7 @@ class CurrencyTest extends LedgerIntegrationTest {
 
   @Test
   void mixedCurrencyAccountsInOnePostingCannotCommit() throws Exception {
-    try (Connection conn = LedgerDatabase.appConnection()) {
+    try (Connection conn = LedgerDB.appConnection()) {
       conn.setAutoCommit(false);
       UUID cadCash = insertAccount(conn, "cad-cash", "ASSET", "CAD", "ALLOW");
       UUID usdCapital = insertAccount(conn, "usd-capital", "EQUITY", "USD", "ALLOW");
@@ -108,7 +108,7 @@ class CurrencyTest extends LedgerIntegrationTest {
 
   @Test
   void zeroDecimalCurrencyPostingCommits() throws Exception {
-    try (Connection conn = LedgerDatabase.appConnection()) {
+    try (Connection conn = LedgerDB.appConnection()) {
       conn.setAutoCommit(false);
       UUID cash = insertAccount(conn, "jpy-cash", "ASSET", "JPY", "DENY");
       UUID capital = insertAccount(conn, "jpy-capital", "EQUITY", "JPY", "DENY");

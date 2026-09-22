@@ -38,10 +38,10 @@ class ReversalApiTest extends LedgerIntegrationTest {
 
   @DynamicPropertySource
   static void datasource(DynamicPropertyRegistry registry) {
-    LedgerDatabase.start();
-    registry.add("spring.datasource.url", () -> LedgerDatabase.ledgerUrl());
-    registry.add("spring.datasource.username", () -> LedgerDatabase.APP);
-    registry.add("spring.datasource.password", () -> LedgerDatabase.APP_PASSWORD);
+    LedgerDB.start();
+    registry.add("spring.datasource.url", () -> LedgerDB.ledgerUrl());
+    registry.add("spring.datasource.username", () -> LedgerDB.APP);
+    registry.add("spring.datasource.password", () -> LedgerDB.APP_PASSWORD);
   }
 
   private record Accounts(UUID cash, UUID capital, UUID supplies) {}
@@ -180,7 +180,7 @@ class ReversalApiTest extends LedgerIntegrationTest {
     assertNull(original.get("reversesPostingId"));
     assertEquals(2, original.get("entryCount"));
 
-    try (Connection conn = LedgerDatabase.appConnection()) {
+    try (Connection conn = LedgerDB.appConnection()) {
       assertEquals(3, tableCount(conn, "ledger_posting"));
       assertEquals(6, tableCount(conn, "ledger_entry"));
     }
@@ -258,7 +258,7 @@ class ReversalApiTest extends LedgerIntegrationTest {
   @Test
   void fraudulentRawReversalFailsAtCommit() throws Exception {
     UUID target;
-    try (Connection conn = LedgerDatabase.appConnection()) {
+    try (Connection conn = LedgerDB.appConnection()) {
       conn.setAutoCommit(false);
       UUID cash = insertAccount(conn, "cash", "ASSET", "CAD", "ALLOW");
       UUID capital = insertAccount(conn, "capital", "EQUITY", "CAD", "ALLOW");

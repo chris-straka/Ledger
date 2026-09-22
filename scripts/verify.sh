@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Non-empty integrity audit. Checks the ledger reachable
 # at 127.0.0.1:5432 as the runtime role: posting closure on every posting,
-# per-currency conservation at zero, and proof the database is not empty.
+# per-currency conservation at zero, and proof the DB is not empty.
 # Exits nonzero on any violation — pretty output is secondary to assertions.
 set -euo pipefail
 
@@ -20,7 +20,7 @@ fail() {
 }
 
 POSTINGS=$("${PSQL[@]}" "SELECT COUNT(*) FROM ledger_posting;")
-[ "$POSTINGS" -ge 1 ] || fail "empty database: no postings to audit"
+[ "$POSTINGS" -ge 1 ] || fail "empty DB: no postings to audit"
 
 BAD_CLOSURE=$("${PSQL[@]}" \
   "SELECT COUNT(*) FROM v_posting_integrity WHERE declared_count <> actual_count OR signed_sum <> 0 OR distinct_accounts < 2;")

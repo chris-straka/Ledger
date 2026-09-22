@@ -19,8 +19,8 @@ Two SQL views (v_account_balance, v_conservation) and one table, no drift is pos
 
 1. Storing a signed amount per entry instead of an unsigned amount with a side
 
-- A signed amount hides the side inside the number, so the database cannot check it.
-- Mistakes can cancel out: flip the signs on both legs and the posting still totals zero. Nothing notices it now describes a deposit.
+- Signed amounts hide the side inside the number, so the DB can't check it.
+- Mistakes can cancel out: flip the signs on both legs and the posting still totals zero. A withdrawal can change to a deposit and nothing notices.
 
 2. A mutable balance column instead of computing balances from entries on read
 
@@ -28,11 +28,12 @@ Two SQL views (v_account_balance, v_conservation) and one table, no drift is pos
 
 ## 2. Integer minor units and overflow-safe aggregation
 
-Amounts are integer minor units — cents, not dollars: 10000 means 100.00. Java carries them
-as `long` and Postgres as `bigint`. The API sends them as base-10 strings, so no client can
-round them. Totals use `BigInteger`, and Postgres `sum(bigint)` comes back as plain text, so
-nothing overflows or rounds at any step. A `double`, `float`, or amount-bearing `BigDecimal`
-anywhere in the money path is a defect.
+Amounts are integer minor units — cents, not dollars (10000 is 100.00).
+Java carries them as `long` and Postgres as `bigint`. 
+The API sends them as base-10 strings, so no client can round them. 
+
+Totals use `BigInteger`, and PG `sum(bigint)` is text so no overflows/rounds. 
+A `double`, `float`, or amount-bearing `BigDecimal` anywhere in the money path is a defect.
 
 - `PostingDraft` proves totals stay exact past `long` range
   (`PostingDraftTest.totalsBeyondLongRangeStillJudgeExactly`).
@@ -71,7 +72,7 @@ with a standing proof that the stored value matches the derived one.
 
 ## 4. JDBC vs. JPA for an append-only, SQL-constrained model
 
-Database access is plain JDBC: `JdbcClient` for queries, `JdbcTemplate` for entry batches.
+DB access is plain JDBC: `JdbcClient` for queries, `JdbcTemplate` for entry batches.
 The schema is versioned SQL via Flyway. That is on purpose. The parts that matter are SQL
 text, the transaction boundary, the commit-time trigger (§5), and the grants (§8). An ORM
 would hide all four behind generated queries, and it brings update/cascade behavior the
@@ -105,7 +106,7 @@ itself stays unordered.
 
 - `PostingBalanceTest` proves balanced postings commit and unbalanced ones fail.
 - `PostingClosureTest` proves nothing appends after commit.
-- `scripts/demo.sh` step 6 proves the seal on a live database.
+- `scripts/demo.sh` step 6 proves the seal on a live DB.
 
 ### Dropped Alternatives
 
@@ -133,8 +134,7 @@ later. No JVM locks: they cannot protect two app instances from each other.
   at −6,000.
 - `ConcurrencyTest.overdraftRaceCommitsOneAndRejectsOne` proves the fix: one 201, one 409,
   with a recorded retry (`AttemptRecorder`).
-- `PostingService` proves the retry protocol: whole-transaction retries, five attempts, then
-  503.
+- `PostingService` proves the retry protocol: whole-transaction retries, five attempts, then 503.
 
 ### Dropped Alternatives
 
@@ -183,7 +183,7 @@ client's retry finds the original instead of posting twice.
 
 ## 8. Migration owner vs. runtime role and the threat boundary
 
-Two database roles split the boundary. `ledger_owner` runs schema migrations and nothing
+Two DB roles split the boundary. `ledger_owner` runs schema migrations and nothing
 else. The app connects as `ledger_app`. It gets CONNECT, schema USAGE, SELECT, and INSERTs on
 an explicit column list (generated IDs and timestamps excluded). It is explicitly revoked
 UPDATE, DELETE, and TRUNCATE. As a backstop, triggers on the journal tables reject any
@@ -192,7 +192,7 @@ limits: the owner role can dismantle all of this, and overdraft safety assumes e
 follows the SERIALIZABLE protocol (§6), which a raw-SQL caller can sidestep. Credentials are
 not a public API.
 
-- `ImmutabilityTest` proves the database refuses UPDATE/DELETE on journal tables, even via
+- `ImmutabilityTest` proves the DB refuses UPDATE/DELETE on journal tables, even via
   the owner path.
 - `RuntimeRoleTest` proves `ledger_app` can only do its listed grants.
 - `spring.flyway.enabled: false` plus the one-shot Compose `migrate` proves the app never

@@ -16,10 +16,10 @@ import org.testcontainers.containers.PostgreSQLContainer;
 /**
  * Shared PostgreSQL fixture. One {@code postgres:18.6} container per JVM — the identical image tag
  * used in Compose — bootstrapped exactly like production: a superuser creates the owner/app roles
- * and the ledger database, Flyway migrates as the owner, and every test connects as the restricted
- * {@code ledger_app} runtime role. Tests never hold owner credentials.
+ * and the ledger DB, Flyway migrates as the owner, and every test connects as the restricted {@code
+ * ledger_app} runtime role. Tests never hold owner credentials.
  */
-final class LedgerDatabase {
+final class LedgerDB {
 
   static final String IMAGE = "postgres:18.6";
   static final String DB = "ledger";
@@ -39,7 +39,7 @@ final class LedgerDatabase {
   private static String ledgerUrl;
   private static String anomalyUrl;
 
-  private LedgerDatabase() {}
+  private LedgerDB() {}
 
   static synchronized void start() {
     if (appPool != null) {
@@ -60,7 +60,7 @@ final class LedgerDatabase {
       throw new IllegalStateException("bootstrap failed", e);
     }
     migrate(ledgerUrl);
-    // The anomaly database carries the identical schema but is deliberately excluded
+    // The anomaly DB carries the identical schema but is deliberately excluded
     // from the shared conservation audit: the weaker-isolation test leaves it overdrawn.
     migrate(anomalyUrl);
     HikariConfig config = new HikariConfig();
@@ -84,7 +84,7 @@ final class LedgerDatabase {
     return appPool.getConnection();
   }
 
-  /** Raw connection to the disposable anomaly database. Never conservation-audited. */
+  /** Raw connection to the disposable anomaly DB. Never conservation-audited. */
   static Connection anomalyConnection(String user, String password) throws SQLException {
     Connection conn = DriverManager.getConnection(anomalyUrl, user, password);
     conn.setAutoCommit(false);

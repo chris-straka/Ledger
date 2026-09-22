@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Restore a scripts/backup.sh dump into a disposable database and audit it:
+# Restore a scripts/backup.sh dump into a disposable DB and audit it:
 # row counts match the source, every posting closes, conservation is zero.
-# The restored database is dropped on success and kept (named) on failure.
+# The restored DB is dropped on success and kept (named) on failure.
 # Usage: ./scripts/restore.sh backups/ledger-<stamp>.dump
 set -euo pipefail
 
@@ -16,7 +16,7 @@ DUMP="$1"
 [ -f "$DUMP" ] || { echo "no such file: $DUMP" >&2; exit 2; }
 
 RESTORE_DB="ledger_restore_$(date -u +%Y%m%dT%H%M%SZ | tr -d ':')"
-echo "== restoring into disposable database $RESTORE_DB"
+echo "== restoring into disposable DB $RESTORE_DB"
 
 cleanup() {
   docker compose exec -T \
@@ -26,7 +26,7 @@ cleanup() {
 trap cleanup EXIT
 
 fail() {
-  echo "RESTORE FAIL: $1 (database $RESTORE_DB kept for inspection)" >&2
+  echo "RESTORE FAIL: $1 (DB $RESTORE_DB kept for inspection)" >&2
   trap - EXIT
   exit 1
 }
@@ -45,7 +45,7 @@ docker compose exec -T \
   pg_restore -U "$POSTGRES_OWNER" -d "$RESTORE_DB" "/tmp/$BASENAME" >/dev/null
 docker compose exec -T postgres rm "/tmp/$BASENAME"
 
-echo "== auditing restored database"
+echo "== auditing restored DB"
 for table in ledger_account ledger_posting ledger_entry; do
   LIVE=$(owner "$POSTGRES_DB" "SELECT COUNT(*) FROM $table;")
   BACK=$(owner "$RESTORE_DB" "SELECT COUNT(*) FROM $table;")

@@ -16,14 +16,14 @@ class RuntimeRoleTest extends LedgerIntegrationTest {
 
   @Test
   void testsConnectAsRestrictedRuntimeRole() throws Exception {
-    try (Connection conn = LedgerDatabase.appConnection()) {
-      assertEquals("ledger_app", LedgerDatabase.currentUser(conn));
+    try (Connection conn = LedgerDB.appConnection()) {
+      assertEquals("ledger_app", LedgerDB.currentUser(conn));
     }
   }
 
   @Test
   void allMigrationsAppliedInOrder() throws Exception {
-    try (Connection conn = LedgerDatabase.appConnection();
+    try (Connection conn = LedgerDB.appConnection();
         Statement stmt = conn.createStatement();
         ResultSet rs =
             stmt.executeQuery(
@@ -38,7 +38,7 @@ class RuntimeRoleTest extends LedgerIntegrationTest {
 
   @Test
   void currencySeedsIncludeZeroDecimalJpy() throws Exception {
-    try (Connection conn = LedgerDatabase.appConnection();
+    try (Connection conn = LedgerDB.appConnection();
         Statement stmt = conn.createStatement();
         ResultSet rs =
             stmt.executeQuery(
@@ -53,12 +53,12 @@ class RuntimeRoleTest extends LedgerIntegrationTest {
 
   @Test
   void conservationViewIsEmptyBeforeAnyPosting() throws Exception {
-    try (Connection conn = LedgerDatabase.appConnection();
+    try (Connection conn = LedgerDB.appConnection();
         Statement stmt = conn.createStatement();
         ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM v_conservation")) {
       rs.next();
       assertEquals(0, rs.getLong(1));
     }
-    assertTrue(LedgerDatabase.conservationViolations().isEmpty());
+    assertTrue(LedgerDB.conservationViolations().isEmpty());
   }
 }

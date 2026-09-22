@@ -44,10 +44,10 @@ class PostingApiTest extends LedgerIntegrationTest {
 
   @DynamicPropertySource
   static void datasource(DynamicPropertyRegistry registry) {
-    LedgerDatabase.start();
-    registry.add("spring.datasource.url", () -> LedgerDatabase.ledgerUrl());
-    registry.add("spring.datasource.username", () -> LedgerDatabase.APP);
-    registry.add("spring.datasource.password", () -> LedgerDatabase.APP_PASSWORD);
+    LedgerDB.start();
+    registry.add("spring.datasource.url", () -> LedgerDB.ledgerUrl());
+    registry.add("spring.datasource.username", () -> LedgerDB.APP);
+    registry.add("spring.datasource.password", () -> LedgerDB.APP_PASSWORD);
   }
 
   private record Accounts(UUID cash, UUID capital, UUID supplies) {}
@@ -157,7 +157,7 @@ class PostingApiTest extends LedgerIntegrationTest {
     assertEquals(first, replay.getBody().get("postingId"));
     assertEquals("true", replay.getHeaders().getFirst("Idempotency-Replayed"));
 
-    try (Connection conn = LedgerDatabase.appConnection()) {
+    try (Connection conn = LedgerDB.appConnection()) {
       assertEquals(1, tableCount(conn, "ledger_posting"));
       assertEquals(2, tableCount(conn, "ledger_entry"));
     }
@@ -326,7 +326,7 @@ class PostingApiTest extends LedgerIntegrationTest {
     }
     pool.shutdown();
     assertEquals(1, new java.util.HashSet<>(ids).size(), "replay race made two postings");
-    try (Connection conn = LedgerDatabase.appConnection()) {
+    try (Connection conn = LedgerDB.appConnection()) {
       assertEquals(1, tableCount(conn, "ledger_posting"));
       assertEquals(2, tableCount(conn, "ledger_entry"));
     }

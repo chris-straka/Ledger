@@ -3,7 +3,7 @@ package dev.straka.ledger;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
-// Docker-free smoke test: proves the Spring context wires without a database.
+// Docker-free smoke test: proves the Spring context wires without a DB.
 // DataSource/Flyway auto-configuration is excluded because PostgreSQL-backed
 // tests live in `integrationTest` (Testcontainers), never in `test`.
 @SpringBootTest(

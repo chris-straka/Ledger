@@ -22,7 +22,7 @@ import org.springframework.stereotype.Repository;
 /**
  * Repository running explicit posting SQL. The header insert and the entry batch run inside the
  * caller's SERIALIZABLE transaction; this class never opens one. IDs and recordedAt stay
- * database-generated, read back through RETURNING.
+ * DB-generated, read back through RETURNING.
  */
 @Repository
 public class PostingRepository {
@@ -153,7 +153,7 @@ public class PostingRepository {
       AccountType type,
       dev.straka.ledger.account.domain.OverdraftPolicy overdraftPolicy) {}
 
-  /** Record describing a committed posting read back from the database, entries included. */
+  /** Record describing a committed posting read back from the DB, entries included. */
   public record StoredPosting(
       UUID id,
       String idempotencyKey,

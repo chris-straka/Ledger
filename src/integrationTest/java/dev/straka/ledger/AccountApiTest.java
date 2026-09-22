@@ -36,10 +36,10 @@ class AccountApiTest extends LedgerIntegrationTest {
 
   @DynamicPropertySource
   static void datasource(DynamicPropertyRegistry registry) {
-    LedgerDatabase.start();
-    registry.add("spring.datasource.url", () -> LedgerDatabase.ledgerUrl());
-    registry.add("spring.datasource.username", () -> LedgerDatabase.APP);
-    registry.add("spring.datasource.password", () -> LedgerDatabase.APP_PASSWORD);
+    LedgerDB.start();
+    registry.add("spring.datasource.url", () -> LedgerDB.ledgerUrl());
+    registry.add("spring.datasource.username", () -> LedgerDB.APP);
+    registry.add("spring.datasource.password", () -> LedgerDB.APP_PASSWORD);
   }
 
   @SuppressWarnings("unchecked")
@@ -95,7 +95,7 @@ class AccountApiTest extends LedgerIntegrationTest {
     UUID cash;
     UUID supplies;
     UUID capital;
-    try (Connection conn = LedgerDatabase.appConnection()) {
+    try (Connection conn = LedgerDB.appConnection()) {
       conn.setAutoCommit(false);
       cash = insertAccount(conn, "cash", "ASSET", "CAD", "DENY");
       capital = insertAccount(conn, "capital", "EQUITY", "CAD", "DENY");
