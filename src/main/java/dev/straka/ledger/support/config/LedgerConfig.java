@@ -6,9 +6,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Application-time decisions (future effectiveAt) run on an injected {@link Clock} so tests pin
- * time; PostgreSQL still assigns recordedAt. The production {@link Sleeper} parks briefly between
- * serialization retries; tests inject a no-op.
+ * Injectable seams for PostingService: the {@link Clock} bounds client-supplied effectiveAt
+ * (rejected beyond now plus five minutes) while recordedAt stays a Postgres default; the
+ * {@link Sleeper} backs the jittered serialization-retry backoff so tests can skip the sleep.
  */
 @Configuration
 public class LedgerConfig {
