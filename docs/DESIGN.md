@@ -1,5 +1,16 @@
 # DESIGN
 
+How this ledger works and why it is shaped this way. Each section states one decision, the
+test that proves it holds, and the alternative that was dropped. Three terms carry the whole
+doc: a **posting** is a small set of **entries** that moves money, an **entry** records one leg
+(debit or credit) against one account, and the **journal** is the append-only store of all of
+them. The one rule above all others: every posting must balance (debits equal credits), so the
+whole ledger always totals zero.
+
+Worked example (from `scripts/demo.sh`): opening capital of 10,000 is one posting with two
+entries — cash DEBIT 10000, capital CREDIT 10000. Debits equal credits, so it commits; cash
+then reads 10000 and capital reads 10000. Every section below defends one part of that flow.
+
 ## 1. Signed journal arithmetic vs. normal-side account balances
 
 Entries store an unsigned amount plus a side (debit/credit).
@@ -29,9 +40,11 @@ Two SQL views (v_account_balance, v_conservation) and one table, no drift is pos
 
 ## 2. Integer minor units and overflow-safe aggregation
 
-Money is `long` minor units in Java and `bigint` in Postgres; the wire form is a base-10 string.
-Sums use `BigInteger`, and Postgres `sum(bigint)` is read as scale-zero text into `BigInteger`.
-A `double`, `float`, or amount-bearing `BigDecimal` anywhere in the money path is a defect.
+Amounts are integer minor units — cents, not dollars: 10000 means 100.00. Java carries them
+as `long`, Postgres as `bigint`, and the API wire form is a base-10 string (so no client can
+round them). Totals are summed in `BigInteger`, and Postgres `sum(bigint)` is read back as
+scale-zero text into `BigInteger`, so nothing overflows or rounds at any step. A `double`,
+`float`, or amount-bearing `BigDecimal` anywhere in the money path is a defect.
 
 - `PostingDraft` proves posting totals are judged in `BigInteger`, exactly past `long` range
   (`PostingDraftTest.totalsBeyondLongRangeStillJudgeExactly`).
@@ -51,9 +64,11 @@ A `double`, `float`, or amount-bearing `BigDecimal` anywhere in the money path i
 
 ## 3. Derived balances vs. a materialized projection
 
-V1 has no balance column: `GET .../balance` recomputes from entries in one statement. A
-materialized projection is stretch goal 1, gated on a benchmark proving derived reads are the
-bottleneck — and even then the journal stays authoritative with a continuous equality proof.
+V1 stores no balance anywhere: `GET .../balance` adds up the account's entries in a single
+SQL statement on every read. A stored (materialized) balance is stretch goal 1 in `TODO.md`,
+gated on a benchmark proving these derived reads are the bottleneck — and even then the
+journal stays authoritative, with a standing proof that the stored value always equals the
+derived one.
 
 - `AccountRepository.balanceOf` proves the balance derives from entries in one statement.
 - `AccountApiTest.balanceDerivesFromEntries` proves the endpoint returns that derived value.
@@ -68,9 +83,11 @@ bottleneck — and even then the journal stays authoritative with a continuous e
 
 ## 4. JDBC vs. JPA for an append-only, SQL-constrained model
 
-`JdbcClient` for queries, `JdbcTemplate` for entry batches, Flyway for schema. The valuable code
-is SQL text, the transaction boundary, the trigger, and the grants — an ORM would hide all four
-and import mutation/cascade semantics the ledger forbids.
+Database access is plain JDBC (`JdbcClient` for queries, `JdbcTemplate` for entry batches)
+and the schema is versioned SQL via Flyway. That is deliberate: the load-bearing parts of this
+system are SQL text, the transaction boundary, the commit-time trigger (§5), and the grants
+(§8) — an ORM would hide all four behind generated queries, and it would import update/cascade
+semantics the ledger forbids.
 
 - `AccountRepository` and `PostingRepository` prove the persistence boundary is explicit SQL:
   `JdbcClient` for queries, `JdbcTemplate` for entry batches.
@@ -90,12 +107,15 @@ and import mutation/cascade semantics the ledger forbids.
 
 ## 5. Deferred constraint triggers and the immutable declared count
 
-A row CHECK cannot see sibling rows, so posting integrity is a `CONSTRAINT TRIGGER ... DEFERRABLE
-INITIALLY DEFERRED` firing from both header and entry inserts and judging the commit-time state:
-count match, exact `1..n` entries, ≥2 accounts, zero signed sum, DENY balances, reversal rules. The
-immutable declared `entry_count` seals the posting: even a later balanced pair breaks the count.
-IDs default to `uuidv7()`, which keeps the PK index append-ordered (the heap itself stays
-unordered — an index is not the table).
+A posting is several rows that are only valid together, but a row CHECK can only see its own
+row — it cannot judge "do these entries balance?". So integrity is enforced by a constraint
+trigger that runs at commit time, after all of the posting's rows are in: it checks the entry
+count matches the declared `entry_count`, the entries are numbered exactly `1..n`, at least
+two accounts take part, the signed sum is zero, DENY accounts are not overdrawn, and reversal
+rules hold. The declared `entry_count` is immutable, which seals the posting shut: even a
+later, perfectly balanced pair of entries breaks the count and fails. IDs default to
+`uuidv7()`, which keeps the primary-key index append-ordered (the heap itself stays unordered
+— an index is not the table).
 
 - `PostingBalanceTest` proves balanced postings commit and unbalanced ones fail at commit.
 - `PostingClosureTest` proves the count seal holds: nothing appends after commit.
@@ -114,11 +134,15 @@ unordered — an index is not the table).
 
 ## 6. Serializable isolation, write skew, retries, hot accounts
 
-The anomaly is overdraft write skew: two transactions read 10,000, each approves 8,000 through
-disjoint inserts, both commit at REPEATABLE READ leaving −6,000 (demonstrated, not theorized).
-Production posts at SERIALIZABLE, so PostgreSQL aborts one attempt with 40001 and the whole
-transaction — decision included — retries with full-jitter backoff, stopping after five with an
-explicit 503. No JVM locks (they cannot protect two instances).
+The anomaly this section exists for is overdraft write skew. Picture a DENY account holding
+10,000: two transactions each read the balance, each approves spending 8,000 through its own
+new rows, and at REPEATABLE READ both commit — leaving −6,000. Neither transaction saw the
+other's rows, so no check fired. That failure is demonstrated by a test, not theorized.
+Production posts at SERIALIZABLE, so PostgreSQL aborts one of the two attempts (SQLSTATE
+40001) and the whole transaction — the overdraft decision included — retries from scratch
+with full-jitter backoff, giving up after five attempts with an explicit 503 (with a
+Retry-After, so the caller retries later). No JVM locks: they cannot protect two app
+instances from each other.
 
 - `ConcurrencyTest.repeatableReadLosesTheOverdraftRace` proves the hole: REPEATABLE READ
   commits two overdraft approvals at −6,000.
@@ -146,11 +170,13 @@ explicit 503. No JVM locks (they cannot protect two instances).
 
 ## 7. Semantic idempotency and the lost-response case
 
-The unique key — not check-then-insert — elects the winner: concurrent inserts race, one wins,
-losers roll back, read the winner outside their transaction, and compare a versioned SHA-256 over
-(kind, description, instant, ordered entries). Equal replays the original (HTTP 200 + flag);
-different bodies conflict (409). Only committed postings consume keys, so a retry after a lost
-response discovers the original instead of doubling it.
+Every post request carries a client-supplied idempotency key with a UNIQUE constraint behind
+it — the key, not application code, decides who wins. If two requests race with the same key,
+one insert wins and the loser rolls back, reads the winner outside its own transaction, and
+compares a versioned SHA-256 fingerprint over (kind, description, instant, ordered entries).
+Same body: the loser replays the original (HTTP 200 + a replay flag). Different body: 409
+conflict. Only committed postings consume keys, so when a response is lost on the wire, the
+client's retry finds the original posting instead of posting twice.
 
 - `PostingFingerprint` proves equal bodies hash equal and different bodies hash different
   (`PostingFingerprintTest`), so replay and conflict are exact comparisons.
@@ -172,11 +198,14 @@ response discovers the original instead of doubling it.
 
 ## 8. Migration owner vs. runtime role and the threat boundary
 
-`ledger_owner` migrates; `ledger_app` gets CONNECT, schema USAGE, SELECT, and column-list
-INSERTs that exclude generated IDs/timestamps — and explicit revokes of UPDATE/DELETE/TRUNCATE.
-Immutable-row triggers backstop a mis-issued grant (proven via the owner path). Stated honestly:
-an owner can dismantle all of this; concurrent-overdraft safety further assumes the SERIALIZABLE
-protocol, which a raw-SQL caller can sidestep. Credentials are not a public API.
+Two database roles split the threat boundary. `ledger_owner` runs schema migrations and
+nothing else. The app connects as `ledger_app`, which gets only CONNECT, schema USAGE, SELECT,
+and INSERTs on an explicit column list (generated IDs and timestamps excluded) — plus explicit
+revokes of UPDATE, DELETE, and TRUNCATE. As a backstop, triggers on the journal tables reject
+any UPDATE/DELETE even if someone mis-issues a grant (proven via the owner path). Stated
+honestly: the owner role can dismantle all of this, and overdraft safety further assumes every
+writer follows the SERIALIZABLE protocol (§6), which a raw-SQL caller can sidestep. Credentials
+are not a public API.
 
 - `ImmutabilityTest` proves the database refuses UPDATE/DELETE on journal tables, even via
   the owner path that backstops a mis-issued grant.
@@ -198,10 +227,12 @@ protocol, which a raw-SQL caller can sidestep. Credentials are not a public API.
 
 ## 9. Exact reversal rather than edit/delete
 
-Corrections are new postings with server-derived inverse entries, validated entry-for-entry at commit
-(same account/amount/currency, opposite side). One unique slot permits a single V1 reversal;
-reversing a reversal is refused by kind; clients cannot label arbitrary postings as reversals;
-overdraft policy still applies, so spent history can refuse to be undone.
+A correction never edits history — it appends a new posting whose entries mirror the
+original one-for-one (same account, amount, and currency, opposite side), and the server
+derives those inverse entries itself; clients only name the posting to reverse. The commit-time
+trigger (§5) validates each inverse entry against its original. One unique slot permits a
+single V1 reversal per posting, reversing a reversal is refused by kind, and overdraft policy
+still applies — so undoing spent history can itself be refused.
 
 - `ReversalApiTest` proves corrections are server-derived inverse postings (7 tests), a
   double reversal is refused via the unique slot, and reversal-of-reversal is refused by kind.
@@ -221,10 +252,11 @@ overdraft policy still applies, so spent history can refuse to be undone.
 
 ## 10. Why FX, Kafka, payments, Kubernetes, and compliance are outside V1
 
-Each would add an invariant the project cannot yet prove (rounding policy, delivery semantics,
-authorization correctness, multi-node truth, legal claims). The README non-goals say so plainly,
-and the only sanctioned re-entry is the stretch list in TODO.md — one at a time, each
-with its own invariant/test row.
+Each of the five would add an invariant this project cannot yet prove — a rounding policy
+for FX, delivery semantics for Kafka, authorization correctness for payments, multi-node truth
+for Kubernetes, legal claims for compliance. The README non-goals say so plainly, and the only
+sanctioned re-entry is the stretch list in TODO.md — one at a time, each with its own
+invariant/test row.
 
 - `README.md` non-goals prove the boundary is stated plainly, not drifted around.
 - `AGENTS.md` proves the contract this project defends instead: eight invariants, each a test.
@@ -255,10 +287,11 @@ with its own invariant/test row.
 
 ## 11. One entries table for all accounts
 
-Tables define kinds, not owners: accounts, postings, and entries each get one table, and a new
-account arrives as a row, never as DDL. A per-account (or per-currency) split would turn account
-creation into schema migration, scatter the conservation sum across N tables, and duplicate
-every constraint once per table.
+Tables define kinds, not owners. There is one table each for accounts, postings, and
+entries — shared by every account in the ledger — so opening an account inserts a row, never
+runs DDL. Splitting entries per account (or per currency) would turn account creation into a
+schema migration, scatter the conservation sum across N tables, and force every constraint to
+be duplicated once per table.
 
 - `V1__journal_schema.sql` proves three journal tables cover every account: a new account
   arrives as a row, never as DDL.
@@ -275,9 +308,11 @@ every constraint once per table.
 
 ## 12. Hexagonal package layout: use cases in application, rules in domain, adapters at the edges
 
-Each area is split four ways: `api` (HTTP in), `application` (use-case orchestration:
-transactions, idempotency, retries), `domain` (rules, framework-free), `persistence` (JDBC out).
-Controllers and repositories translate; all decisions live in `application` plus `domain`.
+Each business area (accounts, postings) is split four ways. `api` takes HTTP in and
+translates it; `application` orchestrates the use case (transactions, idempotency, retries);
+`domain` holds the rules with no framework types; `persistence` speaks JDBC on the way out.
+All decisions live in `application` plus `domain` — controllers and repositories only
+translate at the edges.
 
 - `PostingService` vs. `PostingDraft` proves the split: orchestration in `application`,
   rules in `domain`.
