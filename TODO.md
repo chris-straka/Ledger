@@ -100,5 +100,3 @@ backlog, not a history of completed work.
   adding unlike minor units.
 - Historical statements/as-of balances: effective-time ordering, late/backdated events,
   stable keyset pagination, performance evidence first.
-- Load testing with published hardware, data shape, concurrency, percentiles, and retry
-  rate. One laptop result is not a capacity claim.
