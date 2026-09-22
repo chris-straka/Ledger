@@ -100,3 +100,7 @@ backlog, not a history of completed work.
   adding unlike minor units.
 - Historical statements/as-of balances: effective-time ordering, late/backdated events,
   stable keyset pagination, performance evidence first.
+- Transactional outbox: immutable event intent with the posting, at-least-once publish,
+  stable event IDs, crash/replay proof. Kafka enters here, never before.
+- Load testing with published hardware, data shape, concurrency, percentiles, and retry
+  rate. One laptop result is not a capacity claim.
