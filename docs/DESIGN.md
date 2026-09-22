@@ -32,36 +32,32 @@ Amounts are integer minor units — cents, not dollars (10000 is 100.00).
 Java carries them as `long` and Postgres as `bigint`. 
 The API sends them as base-10 strings, so no client can round them. 
 
-Totals use `BigInteger`, and PG `sum(bigint)` is text so no overflows/rounds. 
-A `double`, `float`, or amount-bearing `BigDecimal` anywhere in the money path is a defect.
+Totals use `BigInteger` and PG `sum(bigint)` -> text, so no overflows/rounds. 
 
 - `PostingDraft` proves totals stay exact past `long` range
-  (`PostingDraftTest.totalsBeyondLongRangeStillJudgeExactly`).
-- `PostingBalanceTest.hugeAmountsNearLongLimitCommitExactly` proves near-limit amounts commit
-  exactly.
+- `PostingBalanceTest` proves near-limit amounts commit exactly.
 
 ### Dropped Alternatives
 
 1. JSON numbers for 64-bit amounts
 
-- Past 2^53, common clients round JSON numbers. The wire form is a base-10 string parsed by
-  `EntryAmount.parse`.
+- Past 2^53, common clients round JSON numbers.
 
-2. `long` accumulation
+2. Summing debit and credit totals in `long` to judge balance
 
-- A wrapped-around total can look balanced when it is not. Sums stay in `BigInteger`.
+- With up to 100 entries each near `Long.MAX`, the sums overflow and wrap, so an unbalanced posting can read as balanced. Totals use `BigInteger` instead.
 
 ## 3. Derived balances vs. a materialized projection
 
-V1 stores no balance anywhere. `GET .../balance` adds up the account's entries in a single
-SQL statement on every read. A stored balance is stretch goal 1 in `TODO.md`. It waits on a
-benchmark showing derived reads are the bottleneck. Even then the journal stays authoritative,
-with a standing proof that the stored value matches the derived one.
+`GET .../balance` adds up the account's entries in a single SQL statement on every read. 
+A stored balance is stretch goal 1 in `TODO.md`. 
 
-- `AccountRepository.balanceOf` proves the balance comes from entries in one statement.
-- `AccountApiTest.balanceDerivesFromEntries` proves the endpoint returns that value.
-- `ConcurrencyTest.concurrentPostingsSumExactly` proves lost updates are impossible by
-  structure, not by locking.
+It waits on a benchmark showing derived reads are the bottleneck. 
+Even then the journal stays authoritative, with a standing proof that the stored value matches the derived one.
+
+- `AccountRepository` proves the balance comes from entries in one statement.
+- `AccountApiTest` proves the endpoint returns that value.
+- `ConcurrencyTest` proves lost updates are impossible by structure, not by locking.
 
 ### Dropped Alternatives
 
@@ -130,10 +126,9 @@ whole transaction, decision included, retries from scratch with full-jitter back
 five attempts it gives up with an explicit 503 and a Retry-After, so the caller retries
 later. No JVM locks: they cannot protect two app instances from each other.
 
-- `ConcurrencyTest.repeatableReadLosesTheOverdraftRace` proves the hole: two approvals commit
-  at −6,000.
-- `ConcurrencyTest.overdraftRaceCommitsOneAndRejectsOne` proves the fix: one 201, one 409,
-  with a recorded retry (`AttemptRecorder`).
+- `ConcurrencyTest` proves the hole: two approvals commit at −6,000.
+- `ConcurrencyTest` proves the fix: one 201, one 409, with a recorded retry
+  (`AttemptRecorder`).
 - `PostingService` proves the retry protocol: whole-transaction retries, five attempts, then 503.
 
 ### Dropped Alternatives
@@ -165,8 +160,7 @@ client's retry finds the original instead of posting twice.
 
 - `PostingFingerprint` proves equal bodies hash equal and different bodies hash different
   (`PostingFingerprintTest`).
-- `PostingService.resolveIdempotencyRace` proves losers read the winner instead of doubling
-  it.
+- `PostingService` proves losers read the winner instead of doubling it.
 - `PostingApiTest` proves replay returns the original (HTTP 200 + flag), conflict returns
   409, and a 20-way race commits exactly once (`scripts/demo.sh` steps 3–4).
 
@@ -219,8 +213,7 @@ applies, so undoing spent history can itself be refused.
 
 - `ReversalApiTest` proves corrections are server-derived inverse postings (7 tests). A
   double reversal is refused, and reversal-of-reversal is refused by kind.
-- `PostingService.reverse` with the V3 reversal block proves each inverse entry matches
-  (`scripts/demo.sh` step 9).
+- `PostingService` proves each inverse entry matches (`scripts/demo.sh` step 9).
 
 ### Dropped Alternatives
 
