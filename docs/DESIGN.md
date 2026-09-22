@@ -69,6 +69,10 @@ explicit 503. No JVM locks (they cannot protect two instances).
 
 - Rejected: READ COMMITTED + `SELECT ... FOR UPDATE` (documented as the likely tuning if
   serialization pressure ever measures too high) and unbounded retries.
+- Rejected: async submit with HTTP 202 plus client polling. It would free the request thread
+  during backoff, but trades a bounded ~600ms synchronous wait for a queue with ordering,
+  redelivery, and duplicate-posting hazards — the idempotency key in §7 replays one request,
+  it does not collapse two queued copies of it.
 - Proof: `PostingService`; `ConcurrencyTest.repeatableReadLosesTheOverdraftRace` (shows the hole)
   and `overdraftRaceCommitsOneAndRejectsOne` (shows the fix, with a recorded retry);
   `AttemptRecorder`.

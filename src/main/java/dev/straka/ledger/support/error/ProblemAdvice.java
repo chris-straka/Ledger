@@ -100,12 +100,13 @@ public class ProblemAdvice {
     return problem(HttpStatus.CONFLICT, "REVERSAL_CONFLICT", e.getMessage(), e);
   }
 
+  // The exponential backoff happens at the server, not the client.
   @ExceptionHandler(PostingRetryExhaustedException.class)
   public ResponseEntity<ProblemDetail> exhausted(PostingRetryExhaustedException e) {
     ProblemDetail body =
         problem(HttpStatus.SERVICE_UNAVAILABLE, "RETRY_EXHAUSTED", e.getMessage(), e);
     return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
-        .header("Retry-After", "1")
+        .header("Retry-After", "1") // server gave up trying to reach the DB
         .body(body);
   }
 
