@@ -107,13 +107,6 @@ The table itself stays unordered.
 - `PostingClosureTest` proves nothing appends after commit.
 - `scripts/demo.sh` step 6 proves the seal on a live DB.
 
-### Dropped Alternatives
-
-1. Insert-only tables without the count seal
-
-- Without the declared count a posting stays open. A later balanced pair rewrites history and
-  nothing fails.
-
 ## 6. Serializable isolation, write skew, retries, hot accounts
 
 Each account either rejects overdrafts (DENY) or allows them (ALLOW). The danger is write
