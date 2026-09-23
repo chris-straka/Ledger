@@ -43,20 +43,9 @@ Reversals can't rewrite history (edits can).
 Reversals make postings auditable without needing an audit table (or sync).
 Overdraft rules still apply, reversing a reversal is refused.
 
-## 7. Why are FX, Kafka, payments, Kubernetes, compliance out?
-
-Each would need a rule I can't prove yet: rounding, delivery, authorization, multi-node truth, legal claims.
-The README says so plainly.
-The way back in is one stretch goal at a time, each with its own rule and test.
-
-## 8. Why one entries table?
+## 7. Why one entries table?
 
 Opening an account must not touch the schema.
 One table each for accounts, postings, entries, shared by everyone.
 Per-account tables would mean DDL per account and the ledger sum scattered across N tables.
 
-## 9. Why four parts per area?
-
-The rules stay testable with no framework, and each feature lives in one place.
-Application and domain decide; the edges only translate.
-Layer-by-kind would scatter one feature across three directories.
