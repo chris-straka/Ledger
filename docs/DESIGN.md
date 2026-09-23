@@ -75,8 +75,9 @@ I don't have a reason to switch to a materialized projection (no bottleneck/benc
 DB access is plain JDBC: `JdbcClient` for queries, `JdbcTemplate` for entry batches.
 The schema is versioned SQL via Flyway. That is on purpose. The parts that matter are SQL
 text, the transaction boundary, the commit-time trigger (§5), and the grants (§8). An ORM
-would hide all four behind generated queries. Its defaults are managed entities with
-automatic updates and cascades, which fight an append-only model.
+would hide all four behind generated queries. An ORM can be told to only insert, but its
+defaults are managed entities, automatic updates, and cascades. You would pay for all of it
+and then disable most of it. Wrong tool, not impossible tool.
 
 - `AccountRepository` and `PostingRepository` prove the persistence boundary is explicit SQL.
 - `DomainIsolationTest` proves the domain has no JDBC. No `ddl-auto`, H2, or entity
@@ -87,7 +88,7 @@ automatic updates and cascades, which fight an append-only model.
 1. Hibernate/JPA
 
 - It hides the SQL, the transaction boundary, the trigger, and the grants.
-- Its defaults are managed entities, automatic updates, and cascades. The ledger would pay for all of it and disable most of it.
+- An ORM can be told to only insert. But you would pay for all of it and then disable most of it. Wrong tool, not impossible tool.
 
 2. Spring Data REST, generated DDL
 
