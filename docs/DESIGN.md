@@ -29,10 +29,10 @@ Two SQL views (v_account_balance, v_conservation) and one table, no drift is pos
 ## 2. Integer minor units and overflow-safe aggregation
 
 Amounts are integer minor units — cents, not dollars (10000 is 100.00).
-Java carries them as `long` and Postgres as `bigint`. 
-The API sends them as base-10 strings, so no client can round them. 
+Java carries them as `long` and Postgres as `bigint`.
+The API sends them as base-10 strings, so no client can round them.
 
-Totals use `BigInteger` and PG `sum(bigint)` -> text, so no overflows/rounds. 
+Totals use `BigInteger` and PG `sum(bigint)` -> text, so no overflows/rounds.
 
 - `PostingDraft` proves totals stay exact past `long` range
 - `PostingBalanceTest` proves near-limit amounts commit exactly.
@@ -43,18 +43,21 @@ Totals use `BigInteger` and PG `sum(bigint)` -> text, so no overflows/rounds.
 
 - Past 2^53, common clients round JSON numbers.
 
-2. Summing debit and credit totals with `long` 
+2. Summing debit and credit totals with `long`
 
 - Entries near `Long.MAX` would overflow and wrap
 
 ## 3. Derived balances vs. a materialized projection
 
-Currently, `GET .../balance` adds up the account's entries on every read. 
+Currently, `GET .../balance` adds up the account's entries on every read.
 
-The alternative is a stored balance column, written in the same tx as the entries. 
-The journal would stay authoritative, and I'd need to prove that the stored value matches the derived one. 
-It's called a materialized projection because the balance is worked out once and stored, instead of added up fresh on every read.
-It waits on a benchmark showing derived reads are the bottleneck.
+The alternative is a stored balance column, written in the same tx as the entries.
+The journal would stay authoritative, and I'd need to prove that the stored value matches the derived one.
+
+Materialized -> saves a view into a col
+Projection -> same data looked at differently
+
+I don't have a reason to switch to a materialized projection (no bottleneck/benchmark so far)
 
 - `AccountRepository` proves the balance comes from entries in one statement.
 - `AccountApiTest` proves the endpoint returns that value.
@@ -62,7 +65,7 @@ It waits on a benchmark showing derived reads are the bottleneck.
 
 ### Dropped Alternatives
 
-1. A `balance` column updated alongside entries
+1. A `balance` col updated alongside entries
 
 - Two copies of the balance would need to stay in sync.
 - Every hot account would gain a lost-update and skew surface.
@@ -72,8 +75,8 @@ It waits on a benchmark showing derived reads are the bottleneck.
 DB access is plain JDBC: `JdbcClient` for queries, `JdbcTemplate` for entry batches.
 The schema is versioned SQL via Flyway. That is on purpose. The parts that matter are SQL
 text, the transaction boundary, the commit-time trigger (§5), and the grants (§8). An ORM
-would hide all four behind generated queries, and it brings update/cascade behavior the
-ledger forbids.
+would hide all four behind generated queries. Its defaults are managed entities with
+automatic updates and cascades, which fight an append-only model.
 
 - `AccountRepository` and `PostingRepository` prove the persistence boundary is explicit SQL.
 - `DomainIsolationTest` proves the domain has no JDBC. No `ddl-auto`, H2, or entity
@@ -84,7 +87,7 @@ ledger forbids.
 1. Hibernate/JPA
 
 - It hides the SQL, the transaction boundary, the trigger, and the grants.
-- It brings update/cascade behavior the ledger forbids.
+- Its defaults are managed entities, automatic updates, and cascades. The ledger would pay for all of it and disable most of it.
 
 2. Spring Data REST, generated DDL
 
