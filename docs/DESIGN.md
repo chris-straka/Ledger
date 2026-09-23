@@ -74,36 +74,34 @@ I don't have a reason to switch to a materialized projection (no bottleneck/benc
 
 DB access is plain JDBC: `JdbcClient` for queries, `JdbcTemplate` for entry batches.
 The schema is versioned SQL via Flyway. That is on purpose. The parts that matter are SQL
-text, the transaction boundary, the commit-time trigger (§5), and the grants (§8). An ORM
-would hide all four behind generated queries. An ORM can be told to only insert, but its
-defaults are managed entities, automatic updates, and cascades. You would pay for all of it
-and then disable most of it. Wrong tool, not impossible tool.
+text, the transaction boundary, the commit-time trigger (§5), and the grants (§8). 
+
+An ORM hides all four behind generated queries. It has managed entities, automatic updates, 
+and cascades for defaults. Paying for all of that and then disabling it felt wrong.
 
 - `AccountRepository` and `PostingRepository` prove the persistence boundary is explicit SQL.
 - `DomainIsolationTest` proves the domain has no JDBC. No `ddl-auto`, H2, or entity
   annotation anywhere.
 
-### Dropped Alternatives
-
-1. Hibernate/JPA
-
-- It hides the SQL, the transaction boundary, the trigger, and the grants.
-- An ORM can be told to only insert. But you would pay for all of it and then disable most of it. Wrong tool, not impossible tool.
-
-2. Spring Data REST, generated DDL
-
-- The schema stays hand-reviewed SQL instead of generated output.
-
 ## 5. Deferred constraint triggers and the immutable declared count
 
-A posting is several rows that are only valid together. A row CHECK sees only its own row,
-so it cannot judge whether entries balance. A constraint trigger runs at commit time instead,
-once all of the posting's rows are in. It checks the count against the declared `entry_count`,
-the numbering is exactly `1..n`, at least two accounts take part, the sum is zero, DENY
-accounts (see §6) are not overdrawn, and the reversal rules hold. The declared `entry_count`
-never changes. That seals the posting: even a later balanced pair breaks the count and fails.
-IDs default to `uuidv7()`, which keeps the primary-key index in insertion order. The table
-itself stays unordered.
+A posting is several rows that are only valid together. 
+A PGSQL row CHECK only sees its own row, so it can't judge whether 2 rows balance. 
+A constraint trigger runs at commit time instead, once all of the posting's rows are in. 
+It checks... 
+
+1. The count against the declared `entry_count`
+2. The numbering is exactly `1..n`
+3. At least two accounts take part 
+4. The sum is zero, 
+5. DENY accounts (see §6) are not overdrawn 
+6. Reversal rules hold. 
+7. The `entry_count` never changes. 
+
+That seals the posting (a later balanced pair breaks the count and fails).
+
+IDs default to `uuidv7()`, which keeps the primary-key index in insertion order. 
+The table itself stays unordered.
 
 - `PostingBalanceTest` proves balanced postings commit and unbalanced ones fail.
 - `PostingClosureTest` proves nothing appends after commit.
@@ -111,11 +109,7 @@ itself stays unordered.
 
 ### Dropped Alternatives
 
-1. Row CHECKs as cross-row proof
-
-- A row CHECK cannot see sibling rows. Only the commit-time trigger sees the whole posting.
-
-2. Insert-only tables without the count seal
+1. Insert-only tables without the count seal
 
 - Without the declared count a posting stays open. A later balanced pair rewrites history and
   nothing fails.
