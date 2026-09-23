@@ -12,55 +12,17 @@ I could've used random UUIDs but they scatter writes across the index.
 v7 starts with a timestamp so new rows land at the end.
 Same uniqueness, cheaper inserts.
 
-## 3. Why SERIALIZABLE? 
+## 3. Why SERIALIZABLE?
 
-A DENY account must hold even when two spends race it.
+Two spends can race one DENY account and both approve.
+At REPEATABLE READ neither sees the other, so both commit and it lands at −6,000.
+SERIALIZABLE aborts one instead. The loser retries, five tries, then the client gets a 503.
 
-Each account either rejects overdrafts (DENY) or allows them (ALLOW).
-Picture a DENY account holding 10,000. Two transactions each approve an 8,000 spend.
-Each reads the balance, sees enough, and writes its own new rows.
-At REPEATABLE READ both commit and the account sits at −6,000.
-Neither saw the other's rows, so no check fired.
-I post at SERIALIZABLE instead, so Postgres aborts one of them (40001).
-The whole transaction runs again from scratch, decision included, with backoff between tries.
-After five tries it stops and answers 503 with a Retry-After 1s, so the caller retries later.
-No JVM locks. A lock in one app instance can't stop another instance.
+## 4. Why idempotency keys?
 
-- `ConcurrencyTest` proves the hole: two approvals commit at −6,000.
-- `ConcurrencyTest` proves the fix: one 201, one 409, with a recorded retry
-  (`AttemptRecorder`).
-- `PostingService` proves the retry protocol: whole-transaction retries, five attempts, then 503.
-
-### Dropped Alternatives
-
-1. READ COMMITTED + `SELECT ... FOR UPDATE`
-
-- My fallback if serializable ever gets too slow. Not needed yet.
-
-2. Unbounded retries
-
-- Five tries, about 600ms worst case, then stop. Forever is not a retry policy.
-
-3. Async submit — answer HTTP 202 at once, queue the posting, have the client poll
-
-- It would free the request thread during retries. But commits could land out of order, and a
-  redelivered request could post twice: the §4 key can't pick one winner out of two queued copies.
-- So retries stay synchronous: the client retries on 503, and the service retries the commit.
-
-## 4. Idempotency keys and the lost response
-
-Idempotency key -> a client-supplied id so a retry never posts twice.
-
-A retried request must never post twice. The key decides who won, not application code.
-
-Every post carries one, backed by a UNIQUE constraint.
-Two requests racing with the same key: one insert wins.
-The loser rolls back, reads the winner outside its own transaction, and compares fingerprints.
-Fingerprint -> a SHA-256 hash over what the posting says (kind, description, instant, entries in order).
-Same body means the loser just replays the original (HTTP 200 + a replay flag).
-Different body means 409. The key picks a winner, it never merges.
-Only committed postings consume keys.
-So when a response dies on the wire, the client retries with the same key and gets the original back instead of posting twice.
+A retried request must never post twice.
+The key decides who won: same body replays the original, different body gets a 409.
+Only committed postings consume keys, so a lost response is answered by retrying the same key.
 
 - `PostingFingerprint` proves equal bodies hash equal and different bodies hash different
   (`PostingFingerprintTest`).
@@ -78,15 +40,11 @@ So when a response dies on the wire, the client retries with the same key and ge
 
 - That would hand back someone else's posting. 409 instead.
 
-## 5. Two database roles and what each may touch
+## 5. Why two database roles?
 
 Even if the app goes rogue, it can't rewrite history. It lacks the rights.
-`ledger_owner` runs migrations and nothing else.
-The app connects as `ledger_app`: connect, use the schema, read, and insert on a listed set of columns.
-No UPDATE, no DELETE, no TRUNCATE. Revoked, not just absent.
-Backstop -> triggers that reject any UPDATE/DELETE even if someone hands out a bad grant.
-Two honest limits: the owner can dismantle all of this, and overdraft safety assumes every
-writer plays by the §3 protocol, which raw SQL can sidestep.
+The owner migrates and nothing else. The app can only read and insert listed columns.
+Triggers backstop the grants. Two honest limits stay: the owner can dismantle it all, and raw SQL can skip the §3 protocol.
 
 - `ImmutabilityTest` proves the DB refuses UPDATE/DELETE on journal tables, even via
   the owner path.
@@ -104,14 +62,11 @@ writer plays by the §3 protocol, which raw SQL can sidestep.
 
 - The runtime role would need DDL (the right to change table shapes). It doesn't get it. The owner migrates once.
 
-## 6. Reversals instead of edits
+## 6. Why reversals?
 
-A correction never edits history. It appends a new posting that mirrors the original line
-for line: same account, amount, and currency, opposite side.
-The server builds those mirror entries. Clients just name the posting.
-The §2 trigger checks each mirror line against its original.
-One reversal per posting, enforced by a unique slot. Reversing a reversal is refused.
-Overdraft rules still apply, so undoing spent money can itself be refused.
+A correction must never rewrite history.
+So it appends a mirror posting: same lines, opposite sides, built by the server.
+One per posting, overdraft rules still apply, reversing a reversal is refused.
 
 - `ReversalApiTest` proves corrections are server-derived inverse postings (7 tests). A
   double reversal is refused, and reversal-of-reversal is refused by kind.
@@ -127,22 +82,21 @@ Overdraft rules still apply, so undoing spent money can itself be refused.
 
 - Clients can't just label anything a reversal. The server builds the mirror, and overdraft rules still apply.
 
-## 7. What stays out and why
+## 7. Why is all that other stuff out?
 
-Each of the five would need a rule I can't prove yet. FX needs a rounding policy. Kafka
-needs delivery promises. Payments need authorization correctness. Kubernetes needs
-multi-node truth. Compliance needs legal claims. The README says so plainly.
-The way back in is one stretch goal at a time from TODO.md, each with its own rule and test.
+Each would need a rule I can't prove yet: rounding, delivery, authorization, multi-node truth, legal claims.
+The README says so plainly.
+The way back in is one stretch goal at a time, each with its own rule and test.
 
 - `README.md` non-goals prove the boundary is stated plainly.
 - `AGENTS.md` proves the contract defended instead: eight invariants, each a test.
 - `TODO.md` proves the only way back in: the stretch list.
 
-## 8. One entries table for all accounts
+## 8. Why one entries table?
 
 Opening an account must not touch the schema.
-Tables define kinds, not owners. Accounts, postings, entries: one table each, shared by everyone.
-Opening an account inserts a row. It never changes the table shapes (never DDL).
+One table each for accounts, postings, entries, shared by everyone.
+Per-account tables would mean DDL per account and the ledger sum scattered across N tables.
 
 - `V1__journal_schema.sql` proves three tables cover every account.
 - `v_conservation` proves the whole-ledger sum reads one table, never N.
@@ -155,15 +109,11 @@ Opening an account inserts a row. It never changes the table shapes (never DDL).
 - The ledger sum would scatter across N tables.
 - Every constraint would need one copy per table.
 
-## 9. Four parts per area, rules in the middle
+## 9. Why four parts per area?
 
 The rules stay testable with no framework, and each feature lives in one place.
-Each area (accounts, postings) splits four ways.
-`api` takes HTTP in and translates it.
-`application` runs the job: transactions, idempotency, retries.
-`domain` holds the rules with no framework types.
-`persistence` speaks JDBC on the way out.
-Decisions live in `application` plus `domain`. The edges only translate.
+Application and domain decide; the edges only translate.
+Layer-by-kind would scatter one feature across three directories.
 
 - `PostingService` vs. `PostingDraft` proves the split: running the use case vs. stating the
   rules.
