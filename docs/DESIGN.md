@@ -6,15 +6,13 @@ An ORM has managed entities, automatic updates, and cascades by default.
 I needed more control to set the tx boundary, BEFORE commit triggers and grants.
 Bringing in an ORM to disable the features it comes with felt like a bad choice.
 
-## 2. Why UUIDv7
+## 2. Why UUIDv7?
 
 I could've used random UUIDs but they scatter writes across the index.
 v7 starts with a timestamp so new rows land at the end.
 Same uniqueness, cheaper inserts.
 
-## 3. Serializable isolation, write skew, retries
-
-Write skew -> two transactions that each look fine alone but break the rules together.
+## 3. Why SERIALIZABLE? 
 
 A DENY account must hold even when two spends race it.
 
