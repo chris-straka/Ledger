@@ -99,16 +99,20 @@ The table itself stays unordered.
 - `PostingClosureTest` proves nothing appends after commit.
 - `scripts/demo.sh` step 6 proves the seal on a live DB.
 
-## 6. Serializable isolation, write skew, retries, hot accounts
+## 6. Serializable isolation, write skew, retries
 
-Each account either rejects overdrafts (DENY) or allows them (ALLOW). The danger is write
-skew. Picture a DENY account holding 10,000. Two transactions each read the balance. Each
-approves spending 8,000 through its own new rows. At REPEATABLE READ both commit, leaving
-−6,000. Neither saw the other's rows, so no check fired. A test demonstrates that failure.
-Production posts at SERIALIZABLE, so PostgreSQL aborts one attempt (SQLSTATE 40001). The
-whole transaction, decision included, retries from scratch with full-jitter backoff. After
-five attempts it gives up with an explicit 503 and a Retry-After, so the caller retries
-later. No JVM locks: they cannot protect two app instances from each other.
+Write skew -> two transactions that each look fine alone but break the rules together.
+
+Each account either rejects overdrafts (DENY) or allows them (ALLOW).
+Picture a DENY account holding 10,000. Two transactions each approve an 8,000 spend.
+Each reads the balance, sees enough, and writes its own new rows.
+At REPEATABLE READ both commit and the account sits at −6,000.
+Neither saw the other's rows, so no check fired.
+I post at SERIALIZABLE instead, so Postgres aborts one of them (40001).
+The whole transaction runs again from scratch, decision included, with backoff between tries.
+Backoff -> each retry waits a random spread of time so two losers don't collide again.
+After five tries it stops and answers 503 with a Retry-After, so the caller retries later.
+No JVM locks. A lock in one app instance can't stop another instance.
 
 - `ConcurrencyTest` proves the hole: two approvals commit at −6,000.
 - `ConcurrencyTest` proves the fix: one 201, one 409, with a recorded retry
@@ -119,28 +123,30 @@ later. No JVM locks: they cannot protect two app instances from each other.
 
 1. READ COMMITTED + `SELECT ... FOR UPDATE`
 
-- Only the documented fallback if serialization pressure ever measures too high.
+- My fallback if serializable ever gets too slow. Not needed yet.
 
 2. Unbounded retries
 
-- Retries stop after five, bounded at ~600ms worst case, instead of running forever.
+- Five tries, about 600ms worst case, then stop. Forever is not a retry policy.
 
 3. Async submit — answer HTTP 202 at once, queue the posting, have the client poll
 
 - It would free the request thread during retries. But commits could land out of order, and a
-  redelivered request could post twice: §7's key cannot collapse two queued copies into one
-  winner.
+  redelivered request could post twice: the §7 key can't pick one winner out of two queued copies.
 - So retries stay synchronous: the client retries on 503, and the service retries the commit.
 
-## 7. Semantic idempotency and the lost-response case
+## 7. Idempotency keys and the lost response
 
-Every post request carries a client-supplied idempotency key with a UNIQUE constraint
-behind it. The key decides who wins, not application code. If two requests race with the same
-key, one insert wins. The loser rolls back, reads the winner outside its own transaction, and
-compares a versioned SHA-256 fingerprint over (kind, description, instant, ordered entries).
-Same body: the loser replays the original (HTTP 200 + a replay flag). Different body: 409
-conflict. Only committed postings consume keys. So when a response is lost on the wire, the
-client's retry finds the original instead of posting twice.
+Idempotency key -> a client-supplied id so a retry never posts twice. The key decides who won, not application code.
+
+Every post carries one, backed by a UNIQUE constraint.
+Two requests racing with the same key: one insert wins.
+The loser rolls back, reads the winner outside its own transaction, and compares fingerprints.
+Fingerprint -> a SHA-256 hash over what the posting says (kind, description, instant, entries in order).
+Same body means the loser just replays the original (HTTP 200 + a replay flag).
+Different body means 409. The key picks a winner, it never merges.
+Only committed postings consume keys.
+So when a response dies on the wire, the client retries with the same key and gets the original back instead of posting twice.
 
 - `PostingFingerprint` proves equal bodies hash equal and different bodies hash different
   (`PostingFingerprintTest`).
@@ -154,21 +160,18 @@ client's retry finds the original instead of posting twice.
 
 - Postings are never updated. The key elects a winner; it never merges one.
 
-2. Same-key/different-body returning the original
+2. Same key + different body returning the original
 
-- That would return an unrelated posting for a different body. It conflicts with 409
-  instead.
+- That would hand back someone else's posting. 409 instead.
 
-## 8. Migration owner vs. runtime role and the threat boundary
+## 8. Two database roles and what each may touch
 
-Two DB roles split the boundary. `ledger_owner` runs schema migrations and nothing
-else. The app connects as `ledger_app`. It gets CONNECT, schema USAGE, SELECT, and INSERTs on
-an explicit column list (generated IDs and timestamps excluded). It is explicitly revoked
-UPDATE, DELETE, and TRUNCATE. As a backstop, triggers on the journal tables reject any
-UPDATE/DELETE even if someone mis-issues a grant (proven via the owner path). Two honest
-limits: the owner role can dismantle all of this, and overdraft safety assumes every writer
-follows the SERIALIZABLE protocol (§6), which a raw-SQL caller can sidestep. Credentials are
-not a public API.
+`ledger_owner` runs migrations and nothing else.
+The app connects as `ledger_app`: connect, use the schema, read, and insert on a listed set of columns.
+No UPDATE, no DELETE, no TRUNCATE. Revoked, not just absent.
+Backstop -> triggers that reject any UPDATE/DELETE even if someone hands out a bad grant.
+Two honest limits: the owner can dismantle all of this, and overdraft safety assumes every
+writer plays by the §6 protocol, which raw SQL can sidestep.
 
 - `ImmutabilityTest` proves the DB refuses UPDATE/DELETE on journal tables, even via
   the owner path.
@@ -178,22 +181,22 @@ not a public API.
 
 ### Dropped Alternatives
 
-1. One superuser identity everywhere
+1. One superuser everywhere
 
-- One leaked credential would dismantle everything. Migration and runtime stay separate.
+- One leaked credential dismantles everything. Migration and runtime stay separate.
 
 2. App-run migrations
 
-- The runtime role would need DDL. Instead `ledger_owner` migrates once.
+- The runtime role would need DDL (the right to change table shapes). It doesn't get it. The owner migrates once.
 
-## 9. Exact reversal rather than edit/delete
+## 9. Reversals instead of edits
 
-A correction never edits history. It appends a new posting whose entries mirror the
-original one-for-one: same account, amount, and currency, opposite side. The server derives
-those inverse entries itself. Clients only name the posting to reverse. The commit-time
-trigger (§5) checks each inverse entry against its original. One unique slot permits a single
-V1 reversal per posting. Reversing a reversal is refused by kind. Overdraft policy still
-applies, so undoing spent history can itself be refused.
+A correction never edits history. It appends a new posting that mirrors the original line
+for line: same account, amount, and currency, opposite side.
+The server builds those mirror entries. Clients just name the posting.
+The §5 trigger checks each mirror line against its original.
+One reversal per posting, enforced by a unique slot. Reversing a reversal is refused.
+Overdraft rules still apply, so undoing spent money can itself be refused.
 
 - `ReversalApiTest` proves corrections are server-derived inverse postings (7 tests). A
   double reversal is refused, and reversal-of-reversal is refused by kind.
@@ -201,53 +204,29 @@ applies, so undoing spent history can itself be refused.
 
 ### Dropped Alternatives
 
-1. Edits, deletes, mutable status flags
+1. Edits, deletes, status flags
 
-- History would be rewritable. Instead a correction is a new posting and the old one stands.
+- History would be rewritable. A correction is a new posting; the old one stands.
 
 2. Client-supplied reversal entries
 
-- Clients cannot label arbitrary postings as reversals. The server derives the inverse
-  entries, and overdraft policy still applies.
+- Clients can't just label anything a reversal. The server builds the mirror, and overdraft rules still apply.
 
-## 10. Why FX, Kafka, payments, Kubernetes, and compliance are outside V1
+## 10. What stays out and why
 
-Each of the five would add an invariant this project cannot yet prove. FX needs a rounding
-policy. Kafka needs delivery semantics. Payments need authorization correctness. Kubernetes
-needs multi-node truth. Compliance needs legal claims. The README non-goals say so plainly.
-The only way back in is the stretch list in TODO.md: one at a time, each with its own
-invariant and test.
+Each of the five would need a rule I can't prove yet. FX needs a rounding policy. Kafka
+needs delivery promises. Payments need authorization correctness. Kubernetes needs
+multi-node truth. Compliance needs legal claims. The README says so plainly.
+The way back in is one stretch goal at a time from TODO.md, each with its own rule and test.
 
 - `README.md` non-goals prove the boundary is stated plainly.
 - `AGENTS.md` proves the contract defended instead: eight invariants, each a test.
 - `TODO.md` proves the only way back in: the stretch list.
 
-### Dropped Alternatives
-
-1. FX
-
-- It needs a rounding policy the project cannot yet prove.
-
-2. Kafka
-
-- It needs delivery semantics the project cannot yet prove.
-
-3. Payments
-
-- They need authorization correctness the project cannot yet prove.
-
-4. Kubernetes
-
-- It needs multi-node truth the project cannot yet prove.
-
-5. Compliance
-
-- It needs legal claims, which the project never makes.
-
 ## 11. One entries table for all accounts
 
-Tables define kinds, not owners. Accounts, postings, and entries get one table each,
-shared by every account. Opening an account inserts a row. It never runs DDL.
+Tables define kinds, not owners. Accounts, postings, entries: one table each, shared by everyone.
+Opening an account inserts a row. It never changes the table shapes (never DDL).
 
 - `V1__journal_schema.sql` proves three tables cover every account.
 - `v_conservation` proves the whole-ledger sum reads one table, never N.
@@ -261,13 +240,14 @@ shared by every account. Opening an account inserts a row. It never runs DDL.
 - Every constraint would need one copy per table.
 - (See §3 for the balances-table version of the same mistake.)
 
-## 12. Hexagonal package layout: use cases in application, rules in domain, adapters at the edges
+## 12. Four parts per area, rules in the middle
 
-Each business area (accounts, postings) is split four ways. `api` takes HTTP in and
-translates it. `application` runs the use case: transactions, idempotency, retries. `domain`
-holds the rules with no framework types. `persistence` speaks JDBC on the way out. All
-decisions live in `application` plus `domain`. Controllers and repositories only translate at
-the edges.
+Each area (accounts, postings) splits four ways.
+`api` takes HTTP in and translates it.
+`application` runs the job: transactions, idempotency, retries.
+`domain` holds the rules with no framework types.
+`persistence` speaks JDBC on the way out.
+Decisions live in `application` plus `domain`. The edges only translate.
 
 - `PostingService` vs. `PostingDraft` proves the split: running the use case vs. stating the
   rules.
@@ -278,8 +258,7 @@ the edges.
 
 1. Layer-by-kind packages (`controllers`, `services`, `repositories`)
 
-- One feature would scatter across three directories. Here each area keeps its four parts
-  together.
+- One feature scatters across three directories. Here each area keeps its four parts together.
 
 2. Framework types leaking into `domain`
 
