@@ -43,9 +43,3 @@ Reversals can't rewrite history (edits can).
 Reversals make postings auditable without needing an audit table (or sync).
 Overdraft rules still apply, reversing a reversal is refused.
 
-## 7. Why one entries table for all accounts?
-
-Opening an account must not touch the schema.
-One table each for accounts, postings, entries, shared by everyone.
-Per-account tables would mean creating tables every time someone opens an account, and counting the ledger would mean querying all of them.
-
