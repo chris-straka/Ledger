@@ -9,22 +9,15 @@ Account balances come from adding up its entries.
 The normal side of a balance is whatever side makes the value go up.
 (ASSET/EXPENSE: debits − credits; everything else: credits − debits).
 
-Two SQL views (v_account_balance, v_conservation) and one table, no drift is possible.
+Two SQL views (v_account_balance, v_conservation) and one table, so no drift is possible.
 
 - `PostingBalanceTest` proves balanced postings commit and unbalanced ones fail at commit.
-
 - `OverdraftTest` proves DENY balances hold at commit (exact-to-zero allowed, ALLOW may go negative).
-
-### Dropped Alternatives
 
 1. Storing a signed amount per entry instead of an unsigned amount with a side
 
 - Signed amounts hide the side inside the number, so the DB can't check it.
 - Mistakes can cancel out: flip the signs on both legs and the posting still totals zero. A withdrawal can change to a deposit and nothing notices.
-
-2. A mutable balance column instead of computing balances from entries on read
-
-- Two copies of the balance would need to stay in sync (see §3).
 
 ## 2. Integer minor units and overflow-safe aggregation
 
@@ -77,7 +70,9 @@ and cascades for defaults. Paying for all of that and then disabling it felt wro
 
 ## 5. Commit-time checks and the sealed posting
 
-A posting is several rows that are only valid together. 
+A posting is several rows that are only valid together.
+My Java checks can be skipped by anyone writing straight to the database.
+So the database checks every commit itself, no matter who wrote the rows.
 A PGSQL row CHECK only sees its own row, so it can't judge whether 2 rows balance. 
 A constraint trigger runs at commit time instead, once all of the posting's rows are in.
 It checks the count, the numbering, the accounts, the zero sum, overdrafts (see §6),
@@ -102,8 +97,7 @@ At REPEATABLE READ both commit and the account sits at −6,000.
 Neither saw the other's rows, so no check fired.
 I post at SERIALIZABLE instead, so Postgres aborts one of them (40001).
 The whole transaction runs again from scratch, decision included, with backoff between tries.
-Backoff -> each retry waits a random spread of time so two losers don't collide again.
-After five tries it stops and answers 503 with a Retry-After, so the caller retries later.
+After five tries it stops and answers 503 with a Retry-After 1s, so the caller retries later.
 No JVM locks. A lock in one app instance can't stop another instance.
 
 - `ConcurrencyTest` proves the hole: two approvals commit at −6,000.
