@@ -14,11 +14,20 @@ Same uniqueness, cheaper inserts.
 
 ## 3. Why SERIALIZABLE?
 
-SERIALIZABLE stops two transactions deciding on the same stale read.
-
 Say the balance is 500 and two 500 withdrawals come in.
 Without it, both read 500 and both apply. The account lands at −500.
 SERIALIZABLE aborts one instead. The loser retries, sees the fresh balance, and gets refused.
+It buys me no locks to manage. Postgres picks the loser.
+
+### Dropped Alternatives
+
+1. Lock the account row first (`SELECT ... FOR UPDATE`)
+
+- Serializes the same decision by hand. My fallback if serializable ever gets too slow.
+
+2. Store the balance in a column with a no-negative check
+
+- The check would read fresh data off the row. But now there's a stored copy to keep in sync (the TODO.md stretch goal).
 
 ## 4. Why idempotency keys?
 
