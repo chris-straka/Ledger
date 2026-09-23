@@ -2,9 +2,10 @@
 
 ## 1. Signed journal arithmetic vs. normal-side account balances
 
-The side stays next to the amount so the database can check it and sign flips can't hide.
-Entries store an unsigned amount plus a side (debit/credit).
-Every posting and the whole ledger must have conservation (must total zero).
+Entries store an unsigned amount plus a side.
+A negative amount is wrong on its own. No context needed.
+A sign is never wrong on its own. Minus 100 is right for one side of an account and wrong for the other.
+So the amount column carries its own check, and the side says which way it moves.
 
 Account balances come from adding up its entries.
 The normal side of a balance is whatever side makes the value go up.
@@ -14,11 +15,6 @@ Two SQL views (v_account_balance, v_conservation) and one table, so no drift is 
 
 - `PostingBalanceTest` proves balanced postings commit and unbalanced ones fail at commit.
 - `OverdraftTest` proves DENY balances hold at commit (exact-to-zero allowed, ALLOW may go negative).
-
-1. Storing a signed amount per entry instead of an unsigned amount with a side
-
-- Signed amounts hide the side inside the number, so the DB can't check it.
-- Mistakes can cancel out: flip the signs on both legs and the posting still totals zero. A withdrawal can change to a deposit and nothing notices.
 
 ## 2. Integer minor units and overflow-safe aggregation
 
