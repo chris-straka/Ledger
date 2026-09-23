@@ -1,50 +1,5 @@
 # DESIGN
 
-## 1. Signed journal arithmetic vs. normal-side account balances
-
-Entry amounts are positive-only magnitudes in a signed long: EntryAmount rejects zero and negatives, and the DB repeats it with CHECK (amount_minor_units > 0). Direction lives in the side, not the sign — journal sums treat DEBIT as + and CREDIT as -. Account balances are normal-side via Balances.of.
-
-- PostingDraftTest proves the domain rejects 0, negatives, and non-integer wire forms.
-- BalancesTest proves the normal-side difference.
-
-## 2. Integer minor units and overflow-safe aggregation
-
-Amounts are integer minor units — cents, not dollars (10000 is 100.00).
-A long is enough to hold one amount (9 quintillion cents). 
-But a posting is not just one amount (can go up to 100 amounts so far).
-So to prevent overflow, totals in java use BigInteger.
-Postgres then stores amounts in bigint, and strings are used for transport.
-JSON numbers can be rounded by some clients past 2^54.
-
-- `PostingDraft` proves totals stay exact past `long` range
-- `PostingBalanceTest` proves near-limit amounts commit exactly.
-
-## 3. Derived balances vs. a materialized projection
-
-There are two SQL views (v_account_balance, v_conservation) and one table, so no drift is possible.
-
-Reads are cheap enough that I add up entries fresh. No stored copy to drift.
-Currently, `GET .../balance` adds up the account's entries on every read.
-
-The alternative is a stored balance column, written in the same tx as the entries.
-The journal would stay authoritative, and I'd need to prove that the stored value matches the derived one.
-
-Materialized -> saves a view into a col
-Projection -> same data looked at differently
-
-I don't have a reason to switch to a materialized projection (no bottleneck/benchmark so far)
-
-- `AccountRepository` proves the balance comes from entries in one statement.
-- `AccountApiTest` proves the endpoint returns that value.
-- `ConcurrencyTest` proves lost updates are impossible by structure, not by locking.
-
-### Dropped Alternatives
-
-1. A `balance` col updated alongside entries
-
-- Two copies of the balance would need to stay in sync.
-- Every hot account would gain a lost-update and skew surface.
-
 ## 4. JDBC vs. JPA for an append-only, SQL-constrained model
 
 The important parts stay readable as SQL text. That is on purpose.
