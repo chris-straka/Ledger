@@ -23,25 +23,27 @@ It buys me no locks to manage. Postgres picks the loser.
 I could've locked the account row first instead, but that's the same decision serialized by hand.
 Or stored the balance in a column so the check reads fresh data, but then there's a copy to keep in sync.
 
-## 4. Why idempotency keys?
+## 4. How are retried requests handled?
 
-A retried request must never post twice.
-The key decides who won: same body replays the original, different body gets a 409.
+A retried request must never post twice, it uses an idempotency key to replay the original response.
+If the request body is different but the key is the same, the response is 409.
 Only committed postings consume keys, so a lost response is answered by retrying the same key.
 
-## 5. Why two database roles?
+## 5. Why two DB roles?
 
-Even if the app goes rogue, it can't rewrite history. It lacks the rights.
-The owner migrates and nothing else. The app can only read and insert listed columns.
-Triggers backstop the grants. Two honest limits stay: the owner can dismantle it all, and raw SQL can skip the §3 protocol.
+Even if the java app goes rogue, it can't rewrite the DB, it lacks the rights.
+The owner migrates and nothing else. The app reads cols and adds postings.
+Triggers also enforce the grants (permissions). 
 
-## 6. Why reversals?
+Two honest limits stay: the owner can dismantle it all, and raw SQL can skip the §3 protocol.
 
-A correction must never rewrite history.
-So it appends a mirror posting: same lines, opposite sides, built by the server.
-One per posting, overdraft rules still apply, reversing a reversal is refused.
+## 6. Why reversals and not edits? 
 
-## 7. Why is all that other stuff out?
+Reversals can't rewrite history (edits can).
+Reversals make postings auditable without needing an audit table (or sync).
+Overdraft rules still apply, reversing a reversal is refused.
+
+## 7. Why are FX, Kafka, payments, Kubernetes, compliance out?
 
 Each would need a rule I can't prove yet: rounding, delivery, authorization, multi-node truth, legal claims.
 The README says so plainly.
