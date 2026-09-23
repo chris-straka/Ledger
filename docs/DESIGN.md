@@ -1,33 +1,16 @@
 # DESIGN
 
-## 1. JDBC vs. JPA for an append-only, SQL-constrained model
+## 1. Why raw SQL?
 
-DB access is plain JDBC: `JdbcClient` for queries, `JdbcTemplate` for entry batches.
-The schema is versioned SQL via Flyway. That is on purpose. The parts that matter are SQL
-text, the transaction boundary, the commit-time trigger (§2), and the grants (§5). 
+An ORM has managed entities, automatic updates, and cascades by default. 
+I needed more control to set the tx boundary, BEFORE commit triggers and grants.
+Bringing in an ORM to disable the features it comes with felt like a bad choice.
 
-An ORM hides all four behind generated queries. It has managed entities, automatic updates, 
-and cascades for defaults. Paying for all of that and then disabling it felt wrong.
+## 2. Why UUIDv7
 
-- `AccountRepository` and `PostingRepository` prove the persistence boundary is explicit SQL.
-- `DomainIsolationTest` proves the domain has no JDBC. No `ddl-auto`, H2, or entity
-  annotation anywhere.
-
-## 2. Commit-time checks and the sealed posting
-
-A posting is several rows that are only valid together.
-Java checks can be skipped by writing directly to the DB.
-So the DB also CHECKs every commit, no matter who wrote it.
-
-A PG row CHECK only sees its own row but postings are at least 2.
-A deferred constraint trigger fires before the commit lands instead, once all of the posting's rows are in — a violation aborts the commit.
-
-IDs default to `uuidv7()`, which keeps the primary-key index in insertion order. 
-The table itself stays unordered.
-
-- `PostingBalanceTest` proves balanced postings commit and unbalanced ones fail.
-- `PostingClosureTest` proves nothing appends after commit.
-- `scripts/demo.sh` step 6 proves the seal on a live DB.
+I could've used random UUIDs but they scatter writes across the index.
+v7 starts with a timestamp so new rows land at the end.
+Same uniqueness, cheaper inserts.
 
 ## 3. Serializable isolation, write skew, retries
 
