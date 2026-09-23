@@ -72,7 +72,7 @@ DENY aborts postings (409) if they overdraft.
 Enforced in the app and by a deferred constraint.
 
 A REPEATABLE READ demo fires two 8,000 withdrawals at 10,000 and leaves -6,000.
-So real postings run SERIALIZABLE instead (see `docs/DESIGN.md` §6).
+So real postings run SERIALIZABLE instead (see `docs/DESIGN.md` §3).
 
 ### Crash atomicity
 

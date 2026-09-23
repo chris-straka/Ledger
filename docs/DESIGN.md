@@ -1,11 +1,11 @@
 # DESIGN
 
-## 4. JDBC vs. JPA for an append-only, SQL-constrained model
+## 1. JDBC vs. JPA for an append-only, SQL-constrained model
 
 The important parts stay readable as SQL text. That is on purpose.
 DB access is plain JDBC: `JdbcClient` for queries, `JdbcTemplate` for entry batches.
 The schema is versioned SQL via Flyway. That is on purpose. The parts that matter are SQL
-text, the transaction boundary, the commit-time trigger (§5), and the grants (§8). 
+text, the transaction boundary, the commit-time trigger (§2), and the grants (§5). 
 
 An ORM hides all four behind generated queries. It has managed entities, automatic updates, 
 and cascades for defaults. Paying for all of that and then disabling it felt wrong.
@@ -14,14 +14,14 @@ and cascades for defaults. Paying for all of that and then disabling it felt wro
 - `DomainIsolationTest` proves the domain has no JDBC. No `ddl-auto`, H2, or entity
   annotation anywhere.
 
-## 5. Commit-time checks and the sealed posting
+## 2. Commit-time checks and the sealed posting
 
 A posting is several rows that are only valid together.
 My Java checks can be skipped by anyone writing straight to the database.
 So the database checks every commit itself, no matter who wrote the rows.
 A PGSQL row CHECK only sees its own row, so it can't judge whether 2 rows balance. 
 A constraint trigger runs at commit time instead, once all of the posting's rows are in.
-It checks the count, the numbering, the accounts, the zero sum, overdrafts (see §6),
+It checks the count, the numbering, the accounts, the zero sum, overdrafts (see §3),
 and the reversal rules. The declared `entry_count` never changes.
 That seals the posting (a later balanced pair breaks the count and fails).
 
@@ -32,7 +32,7 @@ The table itself stays unordered.
 - `PostingClosureTest` proves nothing appends after commit.
 - `scripts/demo.sh` step 6 proves the seal on a live DB.
 
-## 6. Serializable isolation, write skew, retries
+## 3. Serializable isolation, write skew, retries
 
 Write skew -> two transactions that each look fine alone but break the rules together.
 
@@ -66,10 +66,10 @@ No JVM locks. A lock in one app instance can't stop another instance.
 3. Async submit — answer HTTP 202 at once, queue the posting, have the client poll
 
 - It would free the request thread during retries. But commits could land out of order, and a
-  redelivered request could post twice: the §7 key can't pick one winner out of two queued copies.
+  redelivered request could post twice: the §4 key can't pick one winner out of two queued copies.
 - So retries stay synchronous: the client retries on 503, and the service retries the commit.
 
-## 7. Idempotency keys and the lost response
+## 4. Idempotency keys and the lost response
 
 Idempotency key -> a client-supplied id so a retry never posts twice.
 
@@ -100,7 +100,7 @@ So when a response dies on the wire, the client retries with the same key and ge
 
 - That would hand back someone else's posting. 409 instead.
 
-## 8. Two database roles and what each may touch
+## 5. Two database roles and what each may touch
 
 Even if the app goes rogue, it can't rewrite history. It lacks the rights.
 `ledger_owner` runs migrations and nothing else.
@@ -108,7 +108,7 @@ The app connects as `ledger_app`: connect, use the schema, read, and insert on a
 No UPDATE, no DELETE, no TRUNCATE. Revoked, not just absent.
 Backstop -> triggers that reject any UPDATE/DELETE even if someone hands out a bad grant.
 Two honest limits: the owner can dismantle all of this, and overdraft safety assumes every
-writer plays by the §6 protocol, which raw SQL can sidestep.
+writer plays by the §3 protocol, which raw SQL can sidestep.
 
 - `ImmutabilityTest` proves the DB refuses UPDATE/DELETE on journal tables, even via
   the owner path.
@@ -126,12 +126,12 @@ writer plays by the §6 protocol, which raw SQL can sidestep.
 
 - The runtime role would need DDL (the right to change table shapes). It doesn't get it. The owner migrates once.
 
-## 9. Reversals instead of edits
+## 6. Reversals instead of edits
 
 A correction never edits history. It appends a new posting that mirrors the original line
 for line: same account, amount, and currency, opposite side.
 The server builds those mirror entries. Clients just name the posting.
-The §5 trigger checks each mirror line against its original.
+The §2 trigger checks each mirror line against its original.
 One reversal per posting, enforced by a unique slot. Reversing a reversal is refused.
 Overdraft rules still apply, so undoing spent money can itself be refused.
 
@@ -149,7 +149,7 @@ Overdraft rules still apply, so undoing spent money can itself be refused.
 
 - Clients can't just label anything a reversal. The server builds the mirror, and overdraft rules still apply.
 
-## 10. What stays out and why
+## 7. What stays out and why
 
 Each of the five would need a rule I can't prove yet. FX needs a rounding policy. Kafka
 needs delivery promises. Payments need authorization correctness. Kubernetes needs
@@ -160,7 +160,7 @@ The way back in is one stretch goal at a time from TODO.md, each with its own ru
 - `AGENTS.md` proves the contract defended instead: eight invariants, each a test.
 - `TODO.md` proves the only way back in: the stretch list.
 
-## 11. One entries table for all accounts
+## 8. One entries table for all accounts
 
 Opening an account must not touch the schema.
 Tables define kinds, not owners. Accounts, postings, entries: one table each, shared by everyone.
@@ -176,9 +176,8 @@ Opening an account inserts a row. It never changes the table shapes (never DDL).
 - Opening an account would mean running DDL.
 - The ledger sum would scatter across N tables.
 - Every constraint would need one copy per table.
-- (See §3 for the balances-table version of the same mistake.)
 
-## 12. Four parts per area, rules in the middle
+## 9. Four parts per area, rules in the middle
 
 The rules stay testable with no framework, and each feature lives in one place.
 Each area (accounts, postings) splits four ways.
