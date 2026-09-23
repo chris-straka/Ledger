@@ -2,35 +2,26 @@
 
 ## 1. Signed journal arithmetic vs. normal-side account balances
 
-Each entry needs a direction. First try: a signed amount, one column. Simple.
-Problem: nothing about minus 100 is wrong by itself. It's right for one side of an account
-and wrong for the other, so judging it always needs the account. No row-level check can catch it.
-Second try: unsigned amount plus a side. Now a negative amount is wrong on its own, no context
-needed, and the side says which way it moves. Cost: two columns instead of one.
-I picked the second. The checkable column catches flipped signs at the cheapest layer.
+Entry amounts are positive-only magnitudes in a signed long: EntryAmount rejects zero and negatives, and the DB repeats it with CHECK (amount_minor_units > 0). Direction lives in the side, not the sign — journal sums treat DEBIT as + and CREDIT as -. Account balances are normal-side via Balances.of.
 
-Account balances come from adding up its entries.
-The normal side of a balance is whatever side makes the value go up.
-(ASSET/EXPENSE: debits − credits; everything else: credits − debits).
-
-Two SQL views (v_account_balance, v_conservation) and one table, so no drift is possible.
-
-- `PostingBalanceTest` proves balanced postings commit and unbalanced ones fail at commit.
-- `OverdraftTest` proves DENY balances hold at commit (exact-to-zero allowed, ALLOW may go negative).
+- PostingDraftTest proves the domain rejects 0, negatives, and non-integer wire forms.
+- BalancesTest proves the normal-side difference.
 
 ## 2. Integer minor units and overflow-safe aggregation
 
-Not one cent lost to rounding or overflow. Ever.
 Amounts are integer minor units — cents, not dollars (10000 is 100.00).
-Java carries them as `long` and Postgres as `bigint`.
-The API sends them as base-10 strings, so no client can round them.
-
-Totals use `BigInteger` and PG `sum(bigint)` -> text, so no overflows/rounds.
+A long is enough to hold one amount (9 quintillion cents). 
+But a posting is not just one amount (can go up to 100 amounts so far).
+So to prevent overflow, totals in java use BigInteger.
+Postgres then stores amounts in bigint, and strings are used for transport.
+JSON numbers can be rounded by some clients past 2^54.
 
 - `PostingDraft` proves totals stay exact past `long` range
 - `PostingBalanceTest` proves near-limit amounts commit exactly.
 
 ## 3. Derived balances vs. a materialized projection
+
+There are two SQL views (v_account_balance, v_conservation) and one table, so no drift is possible.
 
 Reads are cheap enough that I add up entries fresh. No stored copy to drift.
 Currently, `GET .../balance` adds up the account's entries on every read.
