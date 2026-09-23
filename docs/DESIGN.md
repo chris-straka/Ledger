@@ -14,9 +14,11 @@ Same uniqueness, cheaper inserts.
 
 ## 3. Why SERIALIZABLE?
 
-Two spends can race one DENY account and both approve.
-At REPEATABLE READ neither sees the other, so both commit and it lands at −6,000.
-SERIALIZABLE aborts one instead. The loser retries, five tries, then the client gets a 503.
+SERIALIZABLE stops two transactions deciding on the same stale read.
+
+Say the balance is 500 and two 500 withdrawals come in.
+Without it, both read 500 and both apply. The account lands at −500.
+SERIALIZABLE aborts one instead. The loser retries, sees the fresh balance, and gets refused.
 
 ## 4. Why idempotency keys?
 
