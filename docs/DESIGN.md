@@ -16,8 +16,8 @@ Same uniqueness, cheaper inserts.
 
 Say the balance is 500 and two 500 withdrawals come in.
 Without SERIALIZABLE, both read 500 and both apply. The account lands at −500.
-A check at commit time can't catch it either. It reads the same stale snapshot.
-SERIALIZABLE aborts one instead. The loser retries, sees the fresh balance, and gets refused.
+There is no balance column, and a BEFORE COMMIT CHECK reads the same stale snapshot. 
+SERIALIZABLE aborts one instead. The loser retries and decides on fresh data.
 
 It buys me no locks to manage. Postgres picks the loser.
 I could've locked the account row first instead, but that's the same decision serialized by hand.
