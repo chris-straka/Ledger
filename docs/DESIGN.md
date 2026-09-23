@@ -37,15 +37,7 @@ Totals use `BigInteger` and PG `sum(bigint)` -> text, so no overflows/rounds.
 - `PostingDraft` proves totals stay exact past `long` range
 - `PostingBalanceTest` proves near-limit amounts commit exactly.
 
-### Dropped Alternatives
-
-1. JSON numbers for 64-bit amounts
-
-- Past 2^53, common clients round JSON numbers.
-
-2. Summing debit and credit totals with `long`
-
-- Entries near `Long.MAX` would overflow and wrap
+I had to use these because longs can overflow and JSON numbers get rounded on some clients
 
 ## 3. Derived balances vs. a materialized projection
 
@@ -83,7 +75,7 @@ and cascades for defaults. Paying for all of that and then disabling it felt wro
 - `DomainIsolationTest` proves the domain has no JDBC. No `ddl-auto`, H2, or entity
   annotation anywhere.
 
-## 5. Deferred constraint triggers and the immutable declared count
+## 5. Commit-time checks and the sealed posting
 
 A posting is several rows that are only valid together. 
 A PGSQL row CHECK only sees its own row, so it can't judge whether 2 rows balance. 
