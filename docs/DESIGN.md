@@ -12,11 +12,13 @@ I could've used random UUIDs but they scatter writes across the index.
 v7 starts with a timestamp so new rows land at the end.
 Same uniqueness, cheaper inserts.
 
-## 3. Why SERIALIZABLE?
+## 3. Why SERIALIZABLE? (tx isolation level)
 
 Say the balance is 500 and two 500 withdrawals come in.
-Without it, both read 500 and both apply. The account lands at −500.
+Without SERIALIZABLE, both read 500 and both apply. The account lands at −500.
+A check at commit time can't catch it either. It reads the same stale snapshot.
 SERIALIZABLE aborts one instead. The loser retries, sees the fresh balance, and gets refused.
+
 It buys me no locks to manage. Postgres picks the loser.
 I could've locked the account row first instead, but that's the same decision serialized by hand.
 Or stored the balance in a column so the check reads fresh data, but then there's a copy to keep in sync.
