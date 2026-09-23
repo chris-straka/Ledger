@@ -2,6 +2,7 @@
 
 ## 1. Signed journal arithmetic vs. normal-side account balances
 
+The side stays next to the amount so the database can check it and sign flips can't hide.
 Entries store an unsigned amount plus a side (debit/credit).
 Every posting and the whole ledger must have conservation (must total zero).
 
@@ -21,6 +22,7 @@ Two SQL views (v_account_balance, v_conservation) and one table, so no drift is 
 
 ## 2. Integer minor units and overflow-safe aggregation
 
+Not one cent lost to rounding or overflow. Ever.
 Amounts are integer minor units — cents, not dollars (10000 is 100.00).
 Java carries them as `long` and Postgres as `bigint`.
 The API sends them as base-10 strings, so no client can round them.
@@ -30,10 +32,9 @@ Totals use `BigInteger` and PG `sum(bigint)` -> text, so no overflows/rounds.
 - `PostingDraft` proves totals stay exact past `long` range
 - `PostingBalanceTest` proves near-limit amounts commit exactly.
 
-I had to use these because longs can overflow and JSON numbers get rounded on some clients
-
 ## 3. Derived balances vs. a materialized projection
 
+Reads are cheap enough that I add up entries fresh. No stored copy to drift.
 Currently, `GET .../balance` adds up the account's entries on every read.
 
 The alternative is a stored balance column, written in the same tx as the entries.
@@ -57,6 +58,7 @@ I don't have a reason to switch to a materialized projection (no bottleneck/benc
 
 ## 4. JDBC vs. JPA for an append-only, SQL-constrained model
 
+The important parts stay readable as SQL text. That is on purpose.
 DB access is plain JDBC: `JdbcClient` for queries, `JdbcTemplate` for entry batches.
 The schema is versioned SQL via Flyway. That is on purpose. The parts that matter are SQL
 text, the transaction boundary, the commit-time trigger (§5), and the grants (§8). 
@@ -89,6 +91,8 @@ The table itself stays unordered.
 ## 6. Serializable isolation, write skew, retries
 
 Write skew -> two transactions that each look fine alone but break the rules together.
+
+A DENY account must hold even when two spends race it.
 
 Each account either rejects overdrafts (DENY) or allows them (ALLOW).
 Picture a DENY account holding 10,000. Two transactions each approve an 8,000 spend.
@@ -123,7 +127,9 @@ No JVM locks. A lock in one app instance can't stop another instance.
 
 ## 7. Idempotency keys and the lost response
 
-Idempotency key -> a client-supplied id so a retry never posts twice. The key decides who won, not application code.
+Idempotency key -> a client-supplied id so a retry never posts twice.
+
+A retried request must never post twice. The key decides who won, not application code.
 
 Every post carries one, backed by a UNIQUE constraint.
 Two requests racing with the same key: one insert wins.
@@ -152,6 +158,7 @@ So when a response dies on the wire, the client retries with the same key and ge
 
 ## 8. Two database roles and what each may touch
 
+Even if the app goes rogue, it can't rewrite history. It lacks the rights.
 `ledger_owner` runs migrations and nothing else.
 The app connects as `ledger_app`: connect, use the schema, read, and insert on a listed set of columns.
 No UPDATE, no DELETE, no TRUNCATE. Revoked, not just absent.
@@ -211,6 +218,7 @@ The way back in is one stretch goal at a time from TODO.md, each with its own ru
 
 ## 11. One entries table for all accounts
 
+Opening an account must not touch the schema.
 Tables define kinds, not owners. Accounts, postings, entries: one table each, shared by everyone.
 Opening an account inserts a row. It never changes the table shapes (never DDL).
 
@@ -228,6 +236,7 @@ Opening an account inserts a row. It never changes the table shapes (never DDL).
 
 ## 12. Four parts per area, rules in the middle
 
+The rules stay testable with no framework, and each feature lives in one place.
 Each area (accounts, postings) splits four ways.
 `api` takes HTTP in and translates it.
 `application` runs the job: transactions, idempotency, retries.
