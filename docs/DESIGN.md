@@ -2,7 +2,6 @@
 
 ## 1. JDBC vs. JPA for an append-only, SQL-constrained model
 
-The important parts stay readable as SQL text. That is on purpose.
 DB access is plain JDBC: `JdbcClient` for queries, `JdbcTemplate` for entry batches.
 The schema is versioned SQL via Flyway. That is on purpose. The parts that matter are SQL
 text, the transaction boundary, the commit-time trigger (§2), and the grants (§5). 
@@ -17,13 +16,11 @@ and cascades for defaults. Paying for all of that and then disabling it felt wro
 ## 2. Commit-time checks and the sealed posting
 
 A posting is several rows that are only valid together.
-My Java checks can be skipped by anyone writing straight to the database.
-So the database checks every commit itself, no matter who wrote the rows.
-A PGSQL row CHECK only sees its own row, so it can't judge whether 2 rows balance. 
-A constraint trigger runs at commit time instead, once all of the posting's rows are in.
-It checks the count, the numbering, the accounts, the zero sum, overdrafts (see §3),
-and the reversal rules. The declared `entry_count` never changes.
-That seals the posting (a later balanced pair breaks the count and fails).
+Java checks can be skipped by writing directly to the DB.
+So the DB also CHECKs every commit, no matter who wrote it.
+
+A PG row CHECK only sees its own row but postings are at least 2.
+A deferred constraint trigger fires before the commit lands instead, once all of the posting's rows are in — a violation aborts the commit.
 
 IDs default to `uuidv7()`, which keeps the primary-key index in insertion order. 
 The table itself stays unordered.
