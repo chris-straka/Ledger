@@ -2,10 +2,12 @@
 
 ## 1. Signed journal arithmetic vs. normal-side account balances
 
-Entries store an unsigned amount plus a side.
-A negative amount is wrong on its own. No context needed.
-A sign is never wrong on its own. Minus 100 is right for one side of an account and wrong for the other.
-So the amount column carries its own check, and the side says which way it moves.
+Each entry needs a direction. First try: a signed amount, one column. Simple.
+Problem: nothing about minus 100 is wrong by itself. It's right for one side of an account
+and wrong for the other, so judging it always needs the account. No row-level check can catch it.
+Second try: unsigned amount plus a side. Now a negative amount is wrong on its own, no context
+needed, and the side says which way it moves. Cost: two columns instead of one.
+I picked the second. The checkable column catches flipped signs at the cheapest layer.
 
 Account balances come from adding up its entries.
 The normal side of a balance is whatever side makes the value go up.
