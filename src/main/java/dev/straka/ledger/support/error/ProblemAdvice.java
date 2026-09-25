@@ -106,7 +106,7 @@ public class ProblemAdvice {
     ProblemDetail body =
         problem(HttpStatus.SERVICE_UNAVAILABLE, "RETRY_EXHAUSTED", e.getMessage(), e);
     return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
-        .header("Retry-After", "1") // server gave up trying to reach the DB
+        .header("Retry-After", "1") // server gave up
         .body(body);
   }
 

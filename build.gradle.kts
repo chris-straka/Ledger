@@ -67,6 +67,11 @@ spotless {
         targetExclude("resume.md")
         prettier("3.6.2").config(mapOf("filepath" to "README.md", "proseWrap" to "preserve"))
     }
+    // No SQL formatter: Spotless's only built-in is DBeaver, and it mangles
+    // migration SQL (glues trailing `--` comments into code, splits
+    // CREATE TABLE vertically). Migrations are also byte-stable by Flyway
+    // checksum once applied, so a formatter rewriting them is harm, not help.
+    // Manual style: UPPER keywords, 4-space indent (see .editorconfig).
 }
 
 // Useful compiler linting without overlapping style systems.

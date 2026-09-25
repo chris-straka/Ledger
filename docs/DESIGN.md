@@ -2,7 +2,7 @@
 
 ## 1. Why raw SQL?
 
-An ORM has managed entities, automatic updates, and cascades by default. 
+An ORM has managed entities, automatic updates, and cascades by default.
 I needed more control to set the tx boundary, BEFORE commit triggers and grants.
 Bringing in an ORM to disable the features it comes with felt like a bad choice.
 
@@ -16,7 +16,7 @@ Same uniqueness, cheaper inserts.
 
 Say the balance is 500 and two 500 withdrawals come in.
 Without SERIALIZABLE, both read 500 and both apply. The account lands at −500.
-There is no balance column, and a BEFORE COMMIT CHECK reads the same stale snapshot. 
+There is no balance column, and a BEFORE COMMIT CHECK reads the same stale snapshot.
 SERIALIZABLE aborts one instead. The loser retries, sees the fresh balance, and gets refused.
 
 It buys me no locks to manage. Postgres picks the loser.
@@ -33,13 +33,12 @@ Only committed postings consume keys, so a lost response is answered by retrying
 
 Even if the java app goes rogue, it can't rewrite the DB, it lacks the rights.
 The owner migrates and nothing else. The app reads cols and adds postings.
-Triggers also enforce the grants (permissions). 
+Triggers also enforce the grants (permissions).
 
 Two honest limits stay: the owner can dismantle it all, and raw SQL can skip the §3 protocol.
 
-## 6. Why reversals and not edits? 
+## 6. Why reversals and not edits?
 
 Reversals can't rewrite history (edits can).
 Reversals make postings auditable without needing an audit table (or sync).
 Overdraft rules still apply, reversing a reversal is refused.
-
