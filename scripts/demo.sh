@@ -74,7 +74,7 @@ mkposting() { # key description entries-json -> prints "status postingId"
 }
 
 balance() { # account-id
-  curl -sf "$API/v1/accounts/$1/balance" | python3 -c "import json,sys; print(json.load(sys.stdin)['balanceMinor'])"
+  curl -sf "$API/v1/accounts/$1/balance" | python3 -c "import json,sys; print(json.load(sys.stdin)['balanceMinorUnits'])"
 }
 
 step "1. create Cash, Capital, Supplies"

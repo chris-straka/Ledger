@@ -60,7 +60,7 @@ public class AccountController {
     return new BalanceResponse(
         balance.accountId().toString(),
         balance.currency().code(),
-        balance.balanceMinor().toString());
+        balance.balanceMinorUnits().toString());
   }
 
   @GetMapping("/{accountId}/entries")
@@ -68,7 +68,9 @@ public class AccountController {
       @PathVariable UUID accountId,
       @RequestParam(required = false) String cursor,
       @RequestParam(required = false) String limit) {
+
     EntryPage page = accounts.entries(new AccountId(accountId), cursor, limit);
+
     return new EntryPageResponse(
         page.entries().stream()
             .map(

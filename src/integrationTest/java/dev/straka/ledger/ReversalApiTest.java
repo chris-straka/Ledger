@@ -156,7 +156,7 @@ class ReversalApiTest extends LedgerIntegrationTest {
             .retrieve()
             .toEntity(Map.class)
             .getBody()
-            .get("balanceMinor");
+            .get("balanceMinorUnits");
   }
 
   @Test

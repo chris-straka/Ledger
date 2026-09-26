@@ -398,7 +398,7 @@ public class PostingService {
     // One statement per DENY account, inside the serializable attempt, so the
     // read participates in the serializability guarantee instead of racing it.
     return accounts
-        .balanceMinorOf(id)
+        .balanceMinorUnitsOf(id)
         .orElseThrow(() -> new AccountNotFoundException("account not found: " + id));
   }
 

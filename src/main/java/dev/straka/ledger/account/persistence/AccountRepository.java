@@ -74,8 +74,8 @@ public class AccountRepository {
    * Current normal-side balance for the overdraft projection, derived from entries in one
    * statement. Empty when the account is missing; runs in the caller's transaction.
    */
-  public Optional<BigInteger> balanceMinorOf(AccountId id) {
-    return balanceOf(id).map(AccountBalance::balanceMinor);
+  public Optional<BigInteger> balanceMinorUnitsOf(AccountId id) {
+    return balanceOf(id).map(AccountBalance::balanceMinorUnits);
   }
 
   /**
@@ -134,14 +134,14 @@ public class AccountRepository {
 
   public Optional<AccountBalance> balanceOf(AccountId id) {
     return jdbc.sql(
-            "SELECT account_id, currency_code, balance_minor FROM v_account_balance WHERE account_id = :id")
+            "SELECT account_id, currency_code, balance_minor_units FROM v_account_balance WHERE account_id = :id")
         .param("id", id.value())
         .query(
             (rs, n) ->
                 new AccountBalance(
                     new AccountId((java.util.UUID) rs.getObject("account_id")),
                     new CurrencyCode(rs.getString("currency_code")),
-                    new BigInteger(rs.getString("balance_minor"))))
+                    new BigInteger(rs.getString("balance_minor_units"))))
         .optional();
   }
 
@@ -175,5 +175,5 @@ public class AccountRepository {
   }
 
   public record AccountBalance(
-      AccountId accountId, CurrencyCode currency, BigInteger balanceMinor) {}
+      AccountId accountId, CurrencyCode currency, BigInteger balanceMinorUnits) {}
 }

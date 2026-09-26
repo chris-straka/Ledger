@@ -337,6 +337,6 @@ class PostingApiTest extends LedgerIntegrationTest {
     ResponseEntity<Map> response =
         rest.get().uri("/v1/accounts/" + account + "/balance").retrieve().toEntity(Map.class);
     assertEquals(200, response.getStatusCode().value());
-    return (String) response.getBody().get("balanceMinor");
+    return (String) response.getBody().get("balanceMinorUnits");
   }
 }

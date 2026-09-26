@@ -127,7 +127,7 @@ class ConcurrencyTest extends LedgerIntegrationTest {
   private String balanceOf(UUID account) {
     ResponseEntity<Map> response =
         rest.get().uri("/v1/accounts/" + account + "/balance").retrieve().toEntity(Map.class);
-    return (String) response.getBody().get("balanceMinor");
+    return (String) response.getBody().get("balanceMinorUnits");
   }
 
   @Test
@@ -328,7 +328,8 @@ class ConcurrencyTest extends LedgerIntegrationTest {
 
   private static long readBalance(Connection conn, UUID account) throws Exception {
     try (PreparedStatement ps =
-        conn.prepareStatement("SELECT balance_minor FROM v_account_balance WHERE account_id = ?")) {
+        conn.prepareStatement(
+            "SELECT balance_minor_units FROM v_account_balance WHERE account_id = ?")) {
       ps.setObject(1, account);
       try (ResultSet rs = ps.executeQuery()) {
         rs.next();

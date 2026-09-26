@@ -19,7 +19,7 @@ class OverdraftTest extends LedgerIntegrationTest {
     try (Statement stmt = conn.createStatement();
         ResultSet rs =
             stmt.executeQuery(
-                "SELECT balance_minor FROM v_account_balance WHERE account_id = '"
+                "SELECT balance_minor_units FROM v_account_balance WHERE account_id = '"
                     + accountId
                     + "'")) {
       rs.next();

@@ -93,7 +93,7 @@ class AccountApiTest extends LedgerIntegrationTest {
 
     ResponseEntity<Map> balance = get("/v1/accounts/" + id + "/balance");
     assertEquals(200, balance.getStatusCode().value());
-    assertEquals("0", balance.getBody().get("balanceMinor"));
+    assertEquals("0", balance.getBody().get("balanceMinorUnits"));
   }
 
   @Test
@@ -114,11 +114,12 @@ class AccountApiTest extends LedgerIntegrationTest {
       insertEntry(conn, spend, 2, cash, "CAD", "CREDIT", 2_500);
       conn.commit();
     }
-    assertEquals("7500", get("/v1/accounts/" + cash + "/balance").getBody().get("balanceMinor"));
     assertEquals(
-        "2500", get("/v1/accounts/" + supplies + "/balance").getBody().get("balanceMinor"));
+        "7500", get("/v1/accounts/" + cash + "/balance").getBody().get("balanceMinorUnits"));
     assertEquals(
-        "10000", get("/v1/accounts/" + capital + "/balance").getBody().get("balanceMinor"));
+        "2500", get("/v1/accounts/" + supplies + "/balance").getBody().get("balanceMinorUnits"));
+    assertEquals(
+        "10000", get("/v1/accounts/" + capital + "/balance").getBody().get("balanceMinorUnits"));
   }
 
   @Test
