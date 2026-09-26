@@ -8,7 +8,6 @@ import dev.straka.ledger.account.persistence.AccountRepository;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.UUID;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -39,8 +38,7 @@ public class AccountController {
             request.type(),
             request.overdraftPolicy());
 
-    return ResponseEntity.status(HttpStatus.CREATED)
-        .location(URI.create("/v1/accounts/" + account.id()))
+    return ResponseEntity.created(URI.create("/v1/accounts/" + account.id()))
         .body(AccountResponse.from(account));
   }
 
