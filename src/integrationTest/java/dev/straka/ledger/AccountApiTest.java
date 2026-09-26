@@ -78,7 +78,7 @@ class AccountApiTest extends LedgerIntegrationTest {
   void createGetAndZeroBalance() {
     ResponseEntity<Map> created = postAccount(accountBody("cash-" + UUID.randomUUID()));
     assertEquals(201, created.getStatusCode().value());
-    assertTrue(created.getHeaders().getLocation().toString().startsWith("/v1/accounts/"));
+    assertTrue(created.getHeaders().getLocation().getPath().startsWith("/v1/accounts/"));
     String id = (String) created.getBody().get("accountId");
 
     ResponseEntity<Map> fetched = get("/v1/accounts/" + id);

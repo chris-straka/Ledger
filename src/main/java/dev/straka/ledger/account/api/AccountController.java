@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 /** For creating and querying {@link Account}s. */
 @RestController
@@ -38,8 +39,13 @@ public class AccountController {
             request.type(),
             request.overdraftPolicy());
 
-    return ResponseEntity.created(URI.create("/v1/accounts/" + account.id()))
-        .body(AccountResponse.from(account));
+    URI location =
+        ServletUriComponentsBuilder.fromCurrentRequest()
+            .path("/{id}")
+            .buildAndExpand(account.id())
+            .toUri();
+
+    return ResponseEntity.created(location).body(AccountResponse.from(account));
   }
 
   @GetMapping("/{accountId}")
