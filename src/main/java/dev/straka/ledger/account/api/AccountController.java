@@ -17,10 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * There are no update or delete routes — corrections are reversal postings, and accounts are
- * immutable.
- */
+/** For creating and querying {@link Account}s. */
 @RestController
 @RequestMapping("/v1/accounts")
 public class AccountController {
