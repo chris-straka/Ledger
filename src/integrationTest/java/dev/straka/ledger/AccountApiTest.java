@@ -1,6 +1,7 @@
 package dev.straka.ledger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.sql.Connection;
@@ -44,10 +45,15 @@ class AccountApiTest extends LedgerIntegrationTest {
 
   @SuppressWarnings("unchecked")
   private ResponseEntity<Map> postAccount(Map<String, String> body) {
+    return postAccount("/v1/accounts", body);
+  }
+
+  @SuppressWarnings("unchecked")
+  private ResponseEntity<Map> postAccount(String uri, Map<String, String> body) {
     // A no-op status handler turns every status into a returned entity instead
     // of an exception, so tests assert status codes rather than catch them.
     return rest.post()
-        .uri("/v1/accounts")
+        .uri(uri)
         .contentType(MediaType.APPLICATION_JSON)
         .body(body)
         .retrieve()
@@ -113,6 +119,14 @@ class AccountApiTest extends LedgerIntegrationTest {
         "2500", get("/v1/accounts/" + supplies + "/balance").getBody().get("balanceMinor"));
     assertEquals(
         "10000", get("/v1/accounts/" + capital + "/balance").getBody().get("balanceMinor"));
+  }
+
+  @Test
+  void locationStripsRequestQuery() {
+    ResponseEntity<Map> created =
+        postAccount("/v1/accounts?debug=true", accountBody("query-" + UUID.randomUUID()));
+    assertEquals(201, created.getStatusCode().value());
+    assertNull(created.getHeaders().getLocation().getQuery());
   }
 
   @Test

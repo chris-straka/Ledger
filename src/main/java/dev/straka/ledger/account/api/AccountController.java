@@ -41,6 +41,7 @@ public class AccountController {
 
     URI location =
         ServletUriComponentsBuilder.fromCurrentRequest()
+            .replaceQuery(null)
             .path("/{id}")
             .buildAndExpand(account.id())
             .toUri();

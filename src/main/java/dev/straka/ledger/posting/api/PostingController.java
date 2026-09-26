@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 /** API handler for postings. Each call runs inside {@link PostingService}'s transaction. */
 @RestController
@@ -60,7 +61,13 @@ public class PostingController {
     if (outcome instanceof PostingOutcome.Replayed)
       return ResponseEntity.ok().header("Idempotency-Replayed", "true").body(body);
 
-    return ResponseEntity.created(URI.create("/v1/postings/" + id)).body(body);
+    URI location =
+        ServletUriComponentsBuilder.fromCurrentRequest()
+            .replaceQuery(null)
+            .path("/{id}")
+            .buildAndExpand(id)
+            .toUri();
+    return ResponseEntity.created(location).body(body);
   }
 
   @GetMapping("/{postingId}")
