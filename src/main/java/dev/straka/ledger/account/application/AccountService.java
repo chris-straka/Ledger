@@ -15,6 +15,10 @@ import org.springframework.stereotype.Service;
 @Service
 public class AccountService {
 
+  private static final int MIN_LIMIT = 1;
+  private static final int MAX_LIMIT = 500;
+  private static final int DEFAULT_LIMIT = 50;
+
   private final AccountRepository accounts;
 
   public AccountService(AccountRepository accounts) {
@@ -28,62 +32,63 @@ public class AccountService {
     return accounts.create(code, name, currencyCode, accountType, overdraft);
   }
 
-  public Account get(AccountId id) {
-    return accounts.requireById(id);
+  public Account get(AccountId accountId) {
+    return accounts.requireById(accountId);
   }
 
-  // Keyset pagination: cursor is last row seen and next page resumes 
-  public EntryPage entries(AccountId id, String rawCursor, String rawLimit) {
-    accounts.requireById(id); // make sure the account exists
+  // Keyset pagination: cursor is last row seen and next page resumes
+  public EntryPage entries(AccountId accountId, String cursorRaw, String limitRaw) {
+    accounts.requireById(accountId); // make sure exists else 404
 
-    AccountRepository.EntryCursorBean after = parseAfter(rawCursor);
+    // grab after the raw cursor (to grab the next batch of entries)
+    AccountRepository.EntryCursorBean cursorAfter = parseAfterCursor(cursorRaw);
 
-    int limit = parseLimit(rawLimit);
-    List<AccountRepository.AccountEntry> rows = accounts.listEntries(id, after, limit + 1);
+    int limit = parseLimit(limitRaw);
 
-    List<EntryPage.Entry> page = new ArrayList<>();
+    //
+    List<AccountRepository.AccountEntry> entryRows =
+        accounts.listEntries(accountId, cursorAfter, limit + 1);
+
+    List<EntryPage.Entry> entryPage = new ArrayList<>();
+
     String nextCursor = null;
-    for (int i = 0; i < Math.min(limit, rows.size()); i++)
-      page.add(EntryPage.Entry.from(rows.get(i)));
+    for (int i = 0; i < Math.min(limit, entryRows.size()); i++)
+      entryPage.add(EntryPage.Entry.from(entryRows.get(i)));
 
-    if (rows.size() > limit) {
-      AccountRepository.AccountEntry last = rows.get(limit - 1);
+    if (entryRows.size() > limit) {
+      AccountRepository.AccountEntry last = entryRows.get(limit - 1);
       nextCursor =
           new EntryCursor(last.recordedAt(), last.postingId(), last.entryNumber()).encode();
     }
 
-    return new EntryPage(List.copyOf(page), nextCursor);
+    return new EntryPage(List.copyOf(entryPage), nextCursor);
   }
 
-  private static AccountRepository.EntryCursorBean parseAfter(String rawCursor) {
-    if (rawCursor == null || rawCursor.isBlank()) {
-      return null;
-    }
-    EntryCursor parsed = EntryCursor.parse(rawCursor);
+  private static AccountRepository.EntryCursorBean parseAfterCursor(String cursorRaw) {
+    if (cursorRaw == null || cursorRaw.isBlank()) return null;
+    EntryCursor parsed = EntryCursor.parse(cursorRaw);
     return new AccountRepository.EntryCursorBean(
         parsed.recordedAt(), parsed.postingId(), parsed.entryNumber());
   }
 
-  private static int parseLimit(String raw) {
-    if (raw == null || raw.isBlank()) {
-      return 50;
-    }
+  private static int parseLimit(String limitRaw) {
+    if (limitRaw == null || limitRaw.isBlank()) return DEFAULT_LIMIT;
+
     try {
-      int limit = Integer.parseInt(raw.trim());
-      if (limit < 1 || limit > 500) {
-        throw new IllegalArgumentException("limit must be 1-500");
-      }
+      int limit = Integer.parseInt(limitRaw.trim());
+      if (limit < MIN_LIMIT || limit > MAX_LIMIT)
+        throw new IllegalArgumentException("limit must be " + MIN_LIMIT + "-" + MAX_LIMIT);
       return limit;
     } catch (NumberFormatException e) {
       throw new IllegalArgumentException("limit must be an integer");
     }
   }
 
-  public AccountRepository.AccountBalance balance(AccountId id) {
-    accounts.requireById(id);
+  public AccountRepository.AccountBalance balance(AccountId accountId) {
+    accounts.requireById(accountId);
     return accounts
-        .balanceOf(id)
-        .orElseThrow(() -> new AccountNotFoundException("account not found: " + id));
+        .balanceOf(accountId)
+        .orElseThrow(() -> new AccountNotFoundException("account not found: " + accountId));
   }
 
   private static AccountType parseAccountType(String raw) {
