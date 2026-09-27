@@ -80,7 +80,8 @@ public class AccountRepository {
 
   /**
    * One keyset page of an account's journal entries in immutable order (recordedAt, postingId,
-   * entryNumber). Fetches one row past the page so the caller can tell a next page exists.
+   * entryNumber), resumed past the cursor with a row-value comparison. Fetches one row past the
+   * page so the caller can tell a next page exists.
    */
   public List<AccountEntry> listEntries(AccountId id, EntryCursorBean after, int fetch) {
     String sql =

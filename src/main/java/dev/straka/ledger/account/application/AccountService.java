@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.springframework.stereotype.Service;
 
-/** No transaction boundary here: every operation below is a single atomic statement. */
+/** No tx boundary because every op is a single atomic statement. */
 @Service
 public class AccountService {
 
@@ -32,8 +32,8 @@ public class AccountService {
     return accounts.requireById(id);
   }
 
-  // Keyset pagination: the cursor is the last row seen and the query resumes after it
-  // with a row-value comparison — no OFFSET, so concurrent inserts never shift a page.
+  // Keyset pagination: the cursor is the last row seen and the next page resumes after it —
+  // no OFFSET, so concurrent inserts never shift a page.
   public EntryPage entries(AccountId id, String cursorRaw, String limitRaw) {
     accounts.requireById(id);
 
