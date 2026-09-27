@@ -30,6 +30,9 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class AccountRepository {
 
+  /** SQLSTATE raised on foreign-key violation. */
+  private static final String FOREIGN_KEY_VIOLATION = "23503";
+
   private final JdbcClient jdbc;
 
   public AccountRepository(JdbcClient jdbc) {
@@ -170,11 +173,12 @@ public class AccountRepository {
   private static RuntimeException translate(DataAccessException e, String code) {
     Throwable cause = e;
 
-    // create()'s INSERT has exactly one foreign key (currency_code -> ledger_currency),
-    // so SQLSTATE 23503 here can only mean an unsupported currency. Read off the
-    // driver-neutral java.sql.SQLException so main code never imports the driver.
     while (cause != null) {
-      if (cause instanceof SQLException sql && "23503".equals(sql.getSQLState()))
+      // SQLSTATE is a 5 digit error code that comes from postgres
+      // create()'s INSERT has exactly one foreign key (currency_code -> ledger_currency),
+      // so SQLSTATE 23503 here can only mean an unsupported currency. 
+      // Read off the driver-neutral java.sql.SQLException so main code never imports the driver.
+      if (cause instanceof SQLException sql && FOREIGN_KEY_VIOLATION.equals(sql.getSQLState()))
         return new InvalidAccountException("Unsupported currency for account: " + code);
       cause = cause.getCause();
     }
