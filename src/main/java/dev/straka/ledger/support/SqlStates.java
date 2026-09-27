@@ -4,9 +4,9 @@ import java.sql.SQLException;
 import java.util.Objects;
 
 /**
- * SQLSTATE codes the ledger reads off driver exceptions. A SQLSTATE is a 5-character error code
- * that comes from Postgres, read off the driver-neutral {@link SQLException} so callers never
- * import the driver.
+ * The Postgres error codes (SQLSTATEs) this ledger looks for. A SQLSTATE is a 5-character code
+ * carried by driver exceptions; it is obtained from the driver-neutral {@link SQLException} so
+ * callers never import the driver.
  */
 public final class SqlStates {
 

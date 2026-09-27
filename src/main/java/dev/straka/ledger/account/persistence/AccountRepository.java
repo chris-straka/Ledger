@@ -38,19 +38,23 @@ public class AccountRepository {
   }
 
   public Account create(
-      String code, String name, CurrencyCode currency, AccountType type, OverdraftPolicy policy) {
+      String code,
+      String name,
+      CurrencyCode currency,
+      AccountType type,
+      OverdraftPolicy overdraftPolicy) {
     try {
       return jdbc.sql(
               """
               INSERT INTO ledger_account (account_code, name, currency_code, account_type, overdraft_policy)
-              VALUES (:code, :name, :currency, :type, :policy)
+              VALUES (:code, :name, :currency, :type, :overdraftPolicy)
               RETURNING id, account_code, name, currency_code, account_type, overdraft_policy, created_at
               """)
           .param("code", code)
           .param("name", name)
           .param("currency", currency.code())
           .param("type", type.name())
-          .param("policy", policy.name())
+          .param("overdraftPolicy", overdraftPolicy.name())
           .query(AccountRepository::mapAccount)
           .single();
     } catch (DuplicateKeyException e) {
