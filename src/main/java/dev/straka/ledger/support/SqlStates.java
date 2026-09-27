@@ -25,10 +25,10 @@ public final class SqlStates {
   private SqlStates() {}
 
   /**
-   * True when any {@link SQLException} in the chain carries one of the given codes. Any link may
-   * carry the state (batch and transaction wrappers nest it), so every link is inspected.
+   * True when any {@link SQLException} in the exception chain carries one of the given codes.
+   * Wrappers nest the state, so every cause is inspected.
    */
-  public static boolean hasState(Throwable failure, String... codes) {
+  public static boolean hasSqlState(Throwable failure, String... codes) {
     Throwable cause = failure;
 
     while (cause != null) {

@@ -445,12 +445,12 @@ public class PostingService {
   }
 
   static boolean isSerializationFailure(DataAccessException e) {
-    return SqlStates.hasState(
+    return SqlStates.hasSqlState(
         e, SqlStates.SERIALIZATION_FAILURE_CODE, SqlStates.DEADLOCK_DETECTED_CODE);
   }
 
   private static RuntimeException translateTriggerRejection(DataAccessException e) {
-    if (!SqlStates.hasState(
+    if (!SqlStates.hasSqlState(
         e, SqlStates.CHECK_VIOLATION_CODE, SqlStates.FOREIGN_KEY_VIOLATION_CODE)) return null;
 
     String message = e.getMessage() == null ? "" : e.getMessage();

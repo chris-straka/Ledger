@@ -175,7 +175,7 @@ public class AccountRepository {
   private static RuntimeException translate(DataAccessException e, String code) {
     // create()'s INSERT has exactly one foreign key (currency_code -> ledger_currency),
     // so a foreign-key violation here can only mean an unsupported currency.
-    if (SqlStates.hasState(e, SqlStates.FOREIGN_KEY_VIOLATION_CODE))
+    if (SqlStates.hasSqlState(e, SqlStates.FOREIGN_KEY_VIOLATION_CODE))
       return new InvalidAccountException("Unsupported currency for account: " + code);
     throw e;
   }
