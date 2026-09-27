@@ -41,8 +41,7 @@ class RuntimeRoleTest extends LedgerIntegrationTest {
     try (Connection conn = LedgerDB.appConnection();
         Statement stmt = conn.createStatement();
         ResultSet rs =
-            stmt.executeQuery(
-                "SELECT code, decimal_places FROM ledger_currency ORDER BY code")) {
+            stmt.executeQuery("SELECT code, decimal_places FROM ledger_currency ORDER BY code")) {
       StringBuilder seeds = new StringBuilder();
       while (rs.next()) {
         seeds.append(rs.getString(1)).append(':').append(rs.getInt(2)).append(',');

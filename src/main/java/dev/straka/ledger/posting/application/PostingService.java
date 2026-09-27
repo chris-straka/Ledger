@@ -450,8 +450,8 @@ public class PostingService {
   }
 
   private static RuntimeException translateTriggerRejection(DataAccessException e) {
-    if (!SqlStates.hasState(e, SqlStates.CHECK_VIOLATION_CODE, SqlStates.FOREIGN_KEY_VIOLATION_CODE))
-      return null;
+    if (!SqlStates.hasState(
+        e, SqlStates.CHECK_VIOLATION_CODE, SqlStates.FOREIGN_KEY_VIOLATION_CODE)) return null;
 
     String message = e.getMessage() == null ? "" : e.getMessage();
     if (message.contains("ledger_posting_overdraft"))
