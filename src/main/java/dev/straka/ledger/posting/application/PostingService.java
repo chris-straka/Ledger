@@ -15,10 +15,10 @@ import dev.straka.ledger.posting.domain.PostingEntry;
 import dev.straka.ledger.posting.domain.PostingFingerprint;
 import dev.straka.ledger.posting.domain.PostingKind;
 import dev.straka.ledger.posting.persistence.PostingRepository;
+import dev.straka.ledger.support.SqlStates;
 import dev.straka.ledger.support.crash.CrashGate;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.math.BigInteger;
-import java.sql.SQLException;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -445,33 +445,13 @@ public class PostingService {
   }
 
   static boolean isSerializationFailure(DataAccessException e) {
-    // Any link in the chain may carry the serialization state (batch and
-    // transaction wrappers nest it), so every SQLException is inspected.
-    Throwable cause = e;
-
-    while (cause != null) {
-      if (cause instanceof SQLException sql
-          && ("40001".equals(sql.getSQLState()) || "40P01".equals(sql.getSQLState()))) return true;
-
-      cause = cause.getCause();
-    }
-
-    return false;
-  }
-
-  private static String sqlStateOf(DataAccessException e) {
-    Throwable cause = e;
-
-    while (cause != null) {
-      if (cause instanceof SQLException sql && sql.getSQLState() != null) return sql.getSQLState();
-
-      cause = cause.getCause();
-    }
-    return "";
+    return SqlStates.hasState(
+        e, SqlStates.SERIALIZATION_FAILURE_CODE, SqlStates.DEADLOCK_DETECTED_CODE);
   }
 
   private static RuntimeException translateTriggerRejection(DataAccessException e) {
-    if (!"23514".equals(sqlStateOf(e)) && !"23503".equals(sqlStateOf(e))) return null;
+    if (!SqlStates.hasState(e, SqlStates.CHECK_VIOLATION_CODE, SqlStates.FOREIGN_KEY_VIOLATION_CODE))
+      return null;
 
     String message = e.getMessage() == null ? "" : e.getMessage();
     if (message.contains("ledger_posting_overdraft"))

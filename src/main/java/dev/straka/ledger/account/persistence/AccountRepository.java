@@ -8,6 +8,7 @@ import dev.straka.ledger.account.domain.AccountType;
 import dev.straka.ledger.account.domain.CurrencyCode;
 import dev.straka.ledger.account.domain.InvalidAccountException;
 import dev.straka.ledger.account.domain.OverdraftPolicy;
+import dev.straka.ledger.support.SqlStates;
 import java.math.BigInteger;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -29,9 +30,6 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 public class AccountRepository {
-
-  /** SQLSTATE raised on foreign-key violation. */
-  private static final String FOREIGN_KEY_VIOLATION = "23503";
 
   private final JdbcClient jdbc;
 
@@ -171,17 +169,10 @@ public class AccountRepository {
   }
 
   private static RuntimeException translate(DataAccessException e, String code) {
-    Throwable cause = e;
-
-    while (cause != null) {
-      // SQLSTATE is a 5 digit error code that comes from postgres
-      // create()'s INSERT has exactly one foreign key (currency_code -> ledger_currency),
-      // so SQLSTATE 23503 here can only mean an unsupported currency. 
-      // Read off the driver-neutral java.sql.SQLException so main code never imports the driver.
-      if (cause instanceof SQLException sql && FOREIGN_KEY_VIOLATION.equals(sql.getSQLState()))
-        return new InvalidAccountException("Unsupported currency for account: " + code);
-      cause = cause.getCause();
-    }
+    // create()'s INSERT has exactly one foreign key (currency_code -> ledger_currency),
+    // so a foreign-key violation here can only mean an unsupported currency.
+    if (SqlStates.hasState(e, SqlStates.FOREIGN_KEY_VIOLATION_CODE))
+      return new InvalidAccountException("Unsupported currency for account: " + code);
     throw e;
   }
 
