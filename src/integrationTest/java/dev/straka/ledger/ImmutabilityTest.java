@@ -117,7 +117,7 @@ class ImmutabilityTest extends LedgerIntegrationTest {
       conn.setAutoCommit(false);
       SQLException failure = null;
       try (Statement stmt = conn.createStatement()) {
-        stmt.execute("UPDATE ledger_currency SET minor_unit_digits = 3 WHERE code = 'JPY'");
+        stmt.execute("UPDATE ledger_currency SET decimal_places = 3 WHERE code = 'JPY'");
       } catch (SQLException e) {
         failure = e;
       }

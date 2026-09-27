@@ -42,7 +42,7 @@ class RuntimeRoleTest extends LedgerIntegrationTest {
         Statement stmt = conn.createStatement();
         ResultSet rs =
             stmt.executeQuery(
-                "SELECT code, minor_unit_digits FROM ledger_currency ORDER BY code")) {
+                "SELECT code, decimal_places FROM ledger_currency ORDER BY code")) {
       StringBuilder seeds = new StringBuilder();
       while (rs.next()) {
         seeds.append(rs.getString(1)).append(':').append(rs.getInt(2)).append(',');

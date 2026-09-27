@@ -2,16 +2,16 @@
 
 CREATE TABLE ledger_currency (
     code varchar(3) PRIMARY KEY,
-    minor_unit_digits smallint NOT NULL,
-    CONSTRAINT ledger_currency_digits_range CHECK (minor_unit_digits BETWEEN 0 AND 6)
+    decimal_places smallint NOT NULL,
+    CONSTRAINT ledger_currency_decimal_places_range CHECK (decimal_places BETWEEN 0 AND 6)
 );
 
-INSERT INTO ledger_currency (code, minor_unit_digits) VALUES
+INSERT INTO ledger_currency (code, decimal_places) VALUES
     ('CAD', 2),
     ('USD', 2),
-    ('GBP', 2),
-    ('EUR', 2), -- 10.00 is 1000 minor units (minor exponent is 2)
-    ('JPY', 0); -- 1000¥ is 1000 minor units
+    ('GBP', 2), 
+    ('EUR', 2), -- 10.00 is 1000 minor units (decimal_places is 2)
+    ('JPY', 0); -- 1000¥ is 1000 minor units (decimal_places is 0)
 
 -- The (id, currency_code) key lets entries prove currency agreement.
 CREATE TABLE ledger_account ( -- immutable
