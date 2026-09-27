@@ -79,31 +79,35 @@ public class AccountRepository {
   }
 
   /**
-   * One keyset page of an account's journal entries in immutable order (recordedAt, postingId,
-   * entryNumber), resumed past the cursor with a row-value comparison. Fetches one row past the
-   * page so the caller can tell a next page exists.
+   * Grabs one keyset page of an account's journal entries in immutable order (recordedAt,
+   * postingId, entryNumber), resumed past the cursor with a row-value comparison. Fetches one row
+   * past the page so the caller can tell a next page exists.
    */
-  public List<AccountEntry> listEntries(AccountId id, EntryCursorBean after, int fetch) {
+  public List<AccountEntry> listEntries(AccountId id, EntryCursorBean cursorAfter, int fetch) {
+
     String sql =
         """
         SELECT e.posting_id, e.entry_number, e.side, e.amount_minor_units, e.currency_code,
             p.posting_kind, p.description, p.recorded_at
-        FROM ledger_entry e JOIN ledger_posting p ON p.id = e.posting_id
+        FROM ledger_entry e
+        JOIN ledger_posting p ON p.id = e.posting_id
         WHERE e.account_id = :id
-        """;
-    if (after != null) {
+        """; // :id is named param notation
+
+    // Grab everything after the cursor
+    if (cursorAfter != null)
       sql += " AND (p.recorded_at, e.posting_id, e.entry_number) > (:rec, :pid, :entry)";
-    }
 
     sql += " ORDER BY p.recorded_at, e.posting_id, e.entry_number LIMIT :fetch";
+
     var query = jdbc.sql(sql).param("id", id.value()).param("fetch", fetch);
-    if (after != null) {
+
+    if (cursorAfter != null)
       query =
           query
-              .param("rec", Timestamp.from(after.recordedAt()))
-              .param("pid", after.postingId())
-              .param("entry", after.entryNumber());
-    }
+              .param("rec", Timestamp.from(cursorAfter.recordedAt()))
+              .param("pid", cursorAfter.postingId())
+              .param("entry", cursorAfter.entryNumber());
 
     return query
         .query(
@@ -135,7 +139,8 @@ public class AccountRepository {
 
   public Optional<AccountBalance> balanceOf(AccountId id) {
     return jdbc.sql(
-            "SELECT account_id, currency_code, balance_minor_units FROM v_account_balance WHERE account_id = :id")
+            "SELECT account_id, currency_code, balance_minor_units FROM v_account_balance WHERE"
+                + " account_id = :id")
         .param("id", id.value())
         .query(
             (rs, n) ->
@@ -163,13 +168,14 @@ public class AccountRepository {
   }
 
   private static RuntimeException translate(DataAccessException e, String code) {
-    // SQLSTATE is read off java.sql.SQLException so main code never imports the driver.
     Throwable cause = e;
 
+    // create()'s INSERT has exactly one foreign key (currency_code -> ledger_currency),
+    // so SQLSTATE 23503 here can only mean an unsupported currency. Read off the
+    // driver-neutral java.sql.SQLException so main code never imports the driver.
     while (cause != null) {
-      if (cause instanceof SQLException sql && "23503".equals(sql.getSQLState())) {
-        return new InvalidAccountException("unsupported currency for account: " + code);
-      }
+      if (cause instanceof SQLException sql && "23503".equals(sql.getSQLState()))
+        return new InvalidAccountException("Unsupported currency for account: " + code);
       cause = cause.getCause();
     }
     throw e;
