@@ -10,16 +10,16 @@ import java.util.Objects;
  */
 public final class SqlStates {
 
-  /** Foreign-key violation: unknown currency, account, or posting reference. */
+  /** Unknown currency, account, or posting reference. */
   public static final String FOREIGN_KEY_VIOLATION_CODE = "23503";
 
-  /** Check-constraint violation: raised here by the deferred ledger triggers. */
+  /** Raised here by the deferred ledger triggers. */
   public static final String CHECK_VIOLATION_CODE = "23514";
 
-  /** Serialization failure: the SERIALIZABLE retry signal. */
+  /** The SERIALIZABLE retry signal. */
   public static final String SERIALIZATION_FAILURE_CODE = "40001";
 
-  /** Deadlock detected: retried like a serialization failure. */
+  /** Retried like a serialization failure. */
   public static final String DEADLOCK_DETECTED_CODE = "40P01";
 
   private SqlStates() {}
