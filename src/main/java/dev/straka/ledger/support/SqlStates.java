@@ -13,7 +13,7 @@ public final class SqlStates {
   /** Unknown currency, account, or posting reference. */
   public static final String FOREIGN_KEY_VIOLATION_CODE = "23503";
 
-  /** Raised here by the deferred ledger triggers. */
+  /** Raised by the deferred ledger triggers. */
   public static final String CHECK_VIOLATION_CODE = "23514";
 
   /** The SERIALIZABLE retry signal. */
@@ -34,9 +34,7 @@ public final class SqlStates {
     while (cause != null) {
       if (cause instanceof SQLException sql) {
         for (String code : codes) {
-          if (Objects.equals(sql.getSQLState(), code)) {
-            return true;
-          }
+          if (Objects.equals(sql.getSQLState(), code)) return true;
         }
       }
       cause = cause.getCause();
