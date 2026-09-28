@@ -339,7 +339,8 @@ public class PostingService {
     PostingRepository.CommittedPosting winner =
         postings
             .findByKey(key)
-            .orElseThrow(() -> new ReversalConflictException("original posting is already reversed"));
+            .orElseThrow(
+                () -> new ReversalConflictException("original posting is already reversed"));
 
     return compare(winner, fingerprint);
   }
