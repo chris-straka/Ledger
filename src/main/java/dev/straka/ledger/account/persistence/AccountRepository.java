@@ -106,12 +106,11 @@ public class AccountRepository {
 
     var query = jdbc.sql(sql).param("id", id.value()).param("fetch", fetch);
 
-    if (cursorAfter != null)
-      query =
-          query
-              .param("rec", Timestamp.from(cursorAfter.recordedAt()))
-              .param("pid", cursorAfter.postingId())
-              .param("entry", cursorAfter.entryNumber());
+    if (cursorAfter != null) {
+      query.param("rec", Timestamp.from(cursorAfter.recordedAt()));
+      query.param("pid", cursorAfter.postingId());
+      query.param("entry", cursorAfter.entryNumber());
+    }
 
     return query
         .query(
