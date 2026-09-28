@@ -19,7 +19,7 @@ public final class SqlStates {
   /** The SERIALIZABLE retry signal. */
   public static final String SERIALIZATION_FAILURE_CODE = "40001";
 
-  /** Retried like a serialization failure. */
+  /** Deadlock detected; the aborted transaction is safe to retry. */
   public static final String DEADLOCK_DETECTED_CODE = "40P01";
 
   private SqlStates() {}
