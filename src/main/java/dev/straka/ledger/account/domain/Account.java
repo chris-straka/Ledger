@@ -3,8 +3,8 @@ package dev.straka.ledger.account.domain;
 import java.time.Instant;
 
 /**
- * Record describing an immutable account. Opening value is a posting against another account, never
- * a stored balance field.
+ * Record describing an immutable account. No balance field: value enters through postings, and the
+ * balance is always derived from entries.
  */
 public record Account(
     AccountId id,
