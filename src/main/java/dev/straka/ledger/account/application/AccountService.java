@@ -66,6 +66,7 @@ public class AccountService {
   private static AccountRepository.EntryCursorBean parseAfterCursor(String cursorRaw) {
     if (cursorRaw == null || cursorRaw.isBlank()) return null;
     EntryCursor parsed = EntryCursor.parse(cursorRaw);
+
     return new AccountRepository.EntryCursorBean(
         parsed.recordedAt(), parsed.postingId(), parsed.entryNumber());
   }
@@ -77,6 +78,7 @@ public class AccountService {
       int limit = Integer.parseInt(limitRaw.trim());
       if (limit < MIN_LIMIT || limit > MAX_LIMIT)
         throw new IllegalArgumentException("limit must be " + MIN_LIMIT + "-" + MAX_LIMIT);
+
       return limit;
     } catch (NumberFormatException e) {
       throw new IllegalArgumentException("limit must be an integer");

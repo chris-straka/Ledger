@@ -22,12 +22,7 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
-/**
- * Repository running explicit SQL against the journal tables. Single statements are individually
- * atomic, so this slice needs no explicit TX; the multi-statement posting path is where
- * SERIALIZABLE TXs begin. Amounts leave the DB as scale-zero text parsed into {@link BigInteger} —
- * never through {@code double}.
- */
+/** Single statements are individually atomic, so no tx's are necessary here. */
 @Repository
 public class AccountRepository {
 
@@ -112,9 +107,10 @@ public class AccountRepository {
       query.param("entry", cursorAfter.entryNumber());
     }
 
+    // rs = ResultSet
     return query
         .query(
-            (rs, n) ->
+            (rs, _) -> 
                 new AccountEntry(
                     (UUID) rs.getObject("posting_id"),
                     rs.getInt("entry_number"),

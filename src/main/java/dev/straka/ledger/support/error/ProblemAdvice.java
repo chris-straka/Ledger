@@ -105,6 +105,7 @@ public class ProblemAdvice {
   public ResponseEntity<ProblemDetail> exhausted(PostingRetryExhaustedException e) {
     ProblemDetail body =
         problem(HttpStatus.SERVICE_UNAVAILABLE, "RETRY_EXHAUSTED", e.getMessage(), e);
+
     return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
         .header("Retry-After", "1")
         .body(body);

@@ -4,8 +4,8 @@ import java.time.Instant;
 import java.util.List;
 
 /**
- * Record holding one page of an account's journal entries in immutable order. Amounts are integer
- * strings; {@code nextCursor} is absent on the last page.
+ * Record holding one page of an account's journal entries in immutable order. {@code nextCursor} is
+ * absent on the last page.
  */
 public record EntryPageResponse(List<EntryResponse> entries, String nextCursor) {
   /** One journal entry in transport types. */
@@ -13,7 +13,7 @@ public record EntryPageResponse(List<EntryResponse> entries, String nextCursor) 
       String postingId,
       int entryNumber,
       String side,
-      String amountMinorUnits,
+      String amountMinorUnits, // int64 string
       String currency,
       String postingKind,
       String description,
