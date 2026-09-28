@@ -132,6 +132,7 @@ public class AccountRepository {
       String description,
       Instant recordedAt) {}
 
+  /** Plain cursor fields for the next page, so this repository never imports the app's cursor type. */
   public record EntryCursorBean(Instant recordedAt, UUID postingId, int entryNumber) {}
 
   public Optional<AccountBalance> balanceOf(AccountId id) {
