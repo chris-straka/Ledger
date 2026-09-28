@@ -336,10 +336,12 @@ public class PostingService {
   private PostingOutcome resolveReversalRace(IdempotencyKey key, PostingFingerprint fingerprint) {
     // A unique violation here is either our key (replay/conflict) or the target's
     // single-reversal slot (already reversed). The key lookup tells them apart.
-    PostingRepository.CommittedPosting winner = postings.findByKey(key).orElse(null);
-    if (winner != null) return compare(winner, fingerprint);
+    PostingRepository.CommittedPosting winner =
+        postings
+            .findByKey(key)
+            .orElseThrow(() -> new ReversalConflictException("original posting is already reversed"));
 
-    throw new ReversalConflictException("original posting is already reversed");
+    return compare(winner, fingerprint);
   }
 
   private static PostingOutcome compare(
