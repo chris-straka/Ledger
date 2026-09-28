@@ -92,19 +92,19 @@ public class AccountService {
         .orElseThrow(() -> new AccountNotFoundException("account not found: " + accountId));
   }
 
-  private static AccountType parseAccountType(String raw) {
+  private static AccountType parseAccountType(String type) {
     try {
-      return AccountType.valueOf(raw);
+      return AccountType.valueOf(type);
     } catch (IllegalArgumentException | NullPointerException e) {
-      throw new InvalidAccountException("unknown account type: " + raw);
+      throw new InvalidAccountException("unknown account type: " + type);
     }
   }
 
-  private static OverdraftPolicy parseOverdraftPolicy(String raw) {
+  private static OverdraftPolicy parseOverdraftPolicy(String policy) {
     try {
-      return OverdraftPolicy.valueOf(raw);
+      return OverdraftPolicy.valueOf(policy);
     } catch (IllegalArgumentException | NullPointerException e) {
-      throw new InvalidAccountException("unknown overdraft policy: " + raw);
+      throw new InvalidAccountException("unknown overdraft policy: " + policy);
     }
   }
 }
