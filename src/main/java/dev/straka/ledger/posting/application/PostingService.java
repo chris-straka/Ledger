@@ -98,13 +98,12 @@ public class PostingService {
 
   public PostingOutcome post(
       String key, String description, Instant effectiveAt, List<PostingEntryInput> inputs) {
+
     IdempotencyKey idempotencyKey = new IdempotencyKey(key);
     String cleanDescription = cleanDescription(description);
     Instant cleanEffective = cleanEffectiveAt(effectiveAt);
     List<PostingEntry> entries = toLines(inputs);
 
-    // Currency is derived from accounts inside the TX, never trusted
-    // from the client — so it is not part of the compared body either.
     PostingFingerprint fingerprint =
         PostingFingerprint.v1Standard(cleanDescription, cleanEffective, entries);
 

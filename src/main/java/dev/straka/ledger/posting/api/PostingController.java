@@ -57,7 +57,7 @@ public class PostingController {
           case PostingOutcome.Replayed replayed -> replayed.postingId();
         };
 
-    PostingResponse body = load(id);
+    PostingResponse body = requirePosting(id);
 
     if (outcome instanceof PostingOutcome.Replayed)
       return ResponseEntity.ok().header("Idempotency-Replayed", "true").body(body);
@@ -73,7 +73,7 @@ public class PostingController {
 
   @GetMapping("/{postingId}")
   public PostingResponse get(@PathVariable UUID postingId) {
-    return load(postingId);
+    return requirePosting(postingId);
   }
 
   @PostMapping("/{postingId}/reversals")
@@ -91,7 +91,7 @@ public class PostingController {
           case PostingOutcome.Replayed replayed -> replayed.postingId();
         };
 
-    PostingResponse body = load(id);
+    PostingResponse body = requirePosting(id);
 
     if (outcome instanceof PostingOutcome.Replayed)
       return ResponseEntity.ok().header("Idempotency-Replayed", "true").body(body);
@@ -99,7 +99,7 @@ public class PostingController {
     return ResponseEntity.created(URI.create("/v1/postings/" + id)).body(body);
   }
 
-  private PostingResponse load(UUID id) {
+  private PostingResponse requirePosting(UUID id) {
     return repository
         .findById(id)
         .map(PostingResponse::from)
