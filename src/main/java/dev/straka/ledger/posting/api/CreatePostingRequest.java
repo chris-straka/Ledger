@@ -9,8 +9,8 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Currency is absent by design: it is read from the accounts inside the TX, never trusted from
- * the client.
+ * Currency is absent by design: it is read from the accounts inside the TX, never trusted from the
+ * client.
  */
 public record CreatePostingRequest(
     @NotBlank @Size(max = 500) String description,
