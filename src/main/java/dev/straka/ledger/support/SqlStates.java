@@ -4,9 +4,8 @@ import java.sql.SQLException;
 import java.util.Objects;
 
 /**
- * The Postgres error codes (SQLSTATEs) this ledger looks for. A SQLSTATE is a 5-character code
- * carried by driver exceptions; it is obtained from the driver-neutral {@link SQLException} so
- * callers never import the driver.
+ * The PG error codes (SQLSTATEs) this ledger looks for. A SQLSTATE is a 5-character code carried by
+ * driver exceptions; obtained from the driver-neutral {@link SQLException}
  */
 public final class SqlStates {
 
@@ -19,7 +18,7 @@ public final class SqlStates {
   /** The SERIALIZABLE retry signal. */
   public static final String SERIALIZATION_FAILURE_CODE = "40001";
 
-  /** Deadlock detected; the aborted transaction is safe to retry. */
+  /** PG throws this when the current TX is aborted due to a deadlock. */
   public static final String DEADLOCK_DETECTED_CODE = "40P01";
 
   private SqlStates() {}
