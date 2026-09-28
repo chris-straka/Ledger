@@ -99,7 +99,6 @@ public class AccountRepository {
         WHERE e.account_id = :id
         """; // :id is named param notation
 
-    // Grab everything after the cursor
     if (cursorAfter != null)
       sql += " AND (p.recorded_at, e.posting_id, e.entry_number) > (:rec, :pid, :entry)";
 

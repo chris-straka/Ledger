@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.springframework.stereotype.Service;
 
-/** No tx boundary because every op is a single atomic statement. */
+/** No transaction boundary: every operation is a single atomic statement. */
 @Service
 public class AccountService {
 
@@ -40,12 +40,11 @@ public class AccountService {
   public EntryPage entries(AccountId accountId, String cursorRaw, String limitRaw) {
     accounts.requireById(accountId); // make sure exists else 404
 
-    // grab after the raw cursor (to grab the next batch of entries)
+    // Decodes the cursor; null or blank means the first page.
     AccountRepository.EntryCursorBean cursorAfter = parseAfterCursor(cursorRaw);
 
     int limit = parseLimit(limitRaw);
 
-    //
     List<AccountRepository.AccountEntry> entryRows =
         accounts.listEntries(accountId, cursorAfter, limit + 1);
 

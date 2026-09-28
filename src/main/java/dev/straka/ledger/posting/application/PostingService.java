@@ -38,8 +38,8 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
 /**
- * Provides the posting use cases (hexagonal architecture) —> standard postings and reversals.
- * They're idempotent under client-supplied keys. Each attempt runs in a fresh PostgreSQL {@code
+ * Provides the posting use cases (hexagonal architecture): standard postings and reversals. They're
+ * idempotent under client-supplied keys. Each attempt runs in a fresh PostgreSQL {@code
  * SERIALIZABLE} transaction created by the {@link TransactionTemplate} below.
  *
  * <p>The template keeps the boundary (BEGIN -> COMMIT) visible: a self-call cannot skip it the way

@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Role and migration identity: tests really run as the restricted runtime role against the migrated
- * schema — otherwise every bypass test above would prove nothing.
+ * schema, without which every bypass test would prove nothing.
  */
 class RuntimeRoleTest extends LedgerIntegrationTest {
 

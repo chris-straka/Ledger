@@ -1,4 +1,4 @@
--- Ledger journal schema owned by grant ledger_owner via Flyway
+-- Ledger journal schema, applied by Flyway as the ledger_owner role
 
 CREATE TABLE ledger_currency (
     code varchar(3) PRIMARY KEY,

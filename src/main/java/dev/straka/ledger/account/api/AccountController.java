@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-/** For creating and querying {@link Account}s. */
+/** Thin HTTP adapter for accounts: transport mapping and status codes only. */
 @RestController
 @RequestMapping("/v1/accounts")
 public class AccountController {
@@ -57,6 +57,7 @@ public class AccountController {
   @GetMapping("/{accountId}/balance")
   public BalanceResponse balance(@PathVariable UUID accountId) {
     AccountRepository.AccountBalance balance = accounts.balance(new AccountId(accountId));
+
     return new BalanceResponse(
         balance.accountId().toString(),
         balance.currency().code(),
