@@ -37,8 +37,7 @@ public record PostingDraft(CurrencyCode currency, List<PostingEntry> entries) {
 
     if (entries == null || entries.size() < 2 || entries.size() > 100)
       throw new InvalidPostingException(
-          "posting must declare 2-100 entry entries, got "
-              + (entries == null ? 0 : entries.size()));
+          "posting must declare 2-100 entries, got " + (entries == null ? 0 : entries.size()));
 
     // Null elements are rejected here because List.copyOf would throw a bare NPE instead.
     for (PostingEntry entry : entries) {

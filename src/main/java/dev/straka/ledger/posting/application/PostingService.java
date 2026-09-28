@@ -224,7 +224,7 @@ public class PostingService {
           throw new PostingRetryExhaustedException(
               "posting did not serialize after " + MAX_ATTEMPTS + " attempts");
         }
-        // The deferred trigger is the last entry of defense: if it rejects a commit
+        // The deferred trigger is the last line of defense: if it rejects a commit
         // the application check admitted (e.g. a concurrent overdraft decision), the
         // verdict still surfaces as a business rejection, never a 500.
         RuntimeException translated = translateTriggerRejection(e);
@@ -267,7 +267,7 @@ public class PostingService {
     // Crash window one: header plus entries are inserted, the transaction is still
     // open. A SIGKILL here must leave neither row behind.
     crash.awaitBeforeCommit();
-    // Success is not visible to HTTP until commit plus all deferred triggers succeed.
+    // Safe to construct pre-commit: HTTP sees it only after commit succeeds.
     return new PostingOutcome.Created(id);
   }
 
@@ -403,7 +403,7 @@ public class PostingService {
   }
 
   private static List<PostingEntry> toLines(List<PostingEntryInput> inputs) {
-    if (inputs == null) throw new InvalidPostingException("entry entries are required");
+    if (inputs == null) throw new InvalidPostingException("entries are required");
 
     List<PostingEntry> entries = new ArrayList<>(inputs.size());
     for (PostingEntryInput input : inputs) {

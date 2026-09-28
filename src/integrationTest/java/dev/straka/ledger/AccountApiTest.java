@@ -20,8 +20,7 @@ import org.springframework.web.client.RestClient;
 
 /**
  * Account HTTP slice: thin-controller contract (status codes, Location, string minor units, problem
- * bodies) against real Postgres. Postings are funded through raw JDBC until the posting API lands
- * in Phase 4.
+ * bodies) against real Postgres. Postings are funded through raw JDBC.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class AccountApiTest extends LedgerIntegrationTest {
