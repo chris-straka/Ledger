@@ -62,7 +62,7 @@ push the touched files to `main` immediately, every time, without asking first a
 announcing the intent to ask. Never leave your own changes uncommitted for review. Always sweep
 the user's in-progress work in the touched files into the same commit: one commit containing
 both, never a commit that leaves their hunks behind.
-- In chat, refer to files by bare name (`PostingService.java`), not the full repo path. The user pastes full paths because of a neovim config; replies should stay short. If a navigable link is needed, keep the path in the link target only, never in the visible text.
+- In chat, refer to files by bare name (`PostingService.java`), never the full repo path — not in visible text and not in Markdown link targets either, since this CLI renders link targets visibly. The user pastes full paths because of a neovim config; replies should stay short.
 
 ## Required checks
 
