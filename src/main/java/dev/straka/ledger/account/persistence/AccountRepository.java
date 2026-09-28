@@ -24,9 +24,9 @@ import org.springframework.stereotype.Repository;
 
 /**
  * Repository running explicit SQL against the journal tables. Single statements are individually
- * atomic, so this slice needs no explicit transaction; the multi-statement posting path is where
- * SERIALIZABLE transactions begin. Amounts leave the DB as scale-zero text parsed into {@link
- * BigInteger} — never through {@code double}.
+ * atomic, so this slice needs no explicit TX; the multi-statement posting path is where
+ * SERIALIZABLE TXs begin. Amounts leave the DB as scale-zero text parsed into {@link BigInteger} —
+ * never through {@code double}.
  */
 @Repository
 public class AccountRepository {
@@ -77,7 +77,7 @@ public class AccountRepository {
 
   /**
    * Current normal-side balance for the overdraft projection, derived from entries in one
-   * statement. Empty when the account is missing; runs in the caller's transaction.
+   * statement. Empty when the account is missing; runs in the caller's TX.
    */
   public Optional<BigInteger> balanceMinorUnitsOf(AccountId id) {
     return balanceOf(id).map(AccountBalance::balanceMinorUnits);

@@ -65,8 +65,8 @@ class ImmutabilityTest extends LedgerIntegrationTest {
       conn.commit();
       assertEquals(2, tableCount(conn, "ledger_account"));
 
-      // Each refused statement aborts the transaction (later commands would report
-      // 25P02 instead of their own verdict), so roll back to a fresh transaction
+      // Each refused statement aborts the TX (later commands would report
+      // 25P02 instead of their own verdict), so roll back to a fresh TX
       // between probes. Setup rows are already committed and survive this.
       SQLException deleteFailure = statementFailure(conn, "DELETE FROM ledger_account");
       assertTrue(deleteFailure != null, "DELETE should have been refused");

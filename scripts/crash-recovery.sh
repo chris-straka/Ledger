@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Crash/ambiguous-response harness. Kills a real JVM container
-# with SIGKILL at two exact windows and proves transaction atomicity plus replay
+# with SIGKILL at two exact windows and proves TX atomicity plus replay
 # recovery. Uses its own Compose project (-p), own ports, and own volumes; never
 # touches the developer's normal `ledger` project data. Exits nonzero on any
 # false claim, timeout, empty DB, or nonzero conservation sum.
@@ -89,7 +89,7 @@ CAPITAL=$(json_field accountId)
 BODY1=$(printf '{"description":"crash-before-commit","effectiveAt":"2026-09-04T12:00:00Z","entries":[{"accountId":"%s","side":"DEBIT","amountMinorUnits":"10000"},{"accountId":"%s","side":"CREDIT","amountMinorUnits":"10000"}]}' "$CASH" "$CAPITAL")
 BODY2=$(printf '{"description":"crash-after-commit","effectiveAt":"2026-09-04T12:00:00Z","entries":[{"accountId":"%s","side":"DEBIT","amountMinorUnits":"2500"},{"accountId":"%s","side":"CREDIT","amountMinorUnits":"2500"}]}' "$CASH" "$CAPITAL")
 
-echo "== window 1: SIGKILL with the posting transaction open"
+echo "== window 1: SIGKILL with the posting TX open"
 curl -sf -X POST "$API/internal/crash/arm?window=before-commit" >/dev/null \
   || fail "crash arm endpoint unreachable (is the crash-test profile active?)"
 curl -s -X POST "$API/v1/postings" -H 'Content-Type: application/json' \

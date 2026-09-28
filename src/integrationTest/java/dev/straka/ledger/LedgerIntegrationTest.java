@@ -20,10 +20,10 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 
 /**
- * Base for direct-JDBC commit tests. Every test connects as {@code ledger_app}, drives explicit
- * transactions to a real commit, and asserts SQLSTATE plus the stable constraint/message name —
- * never an English server message. No Spring test transaction wraps these: an auto-rolled-back
- * transaction cannot prove a deferred commit-time constraint.
+ * Base for direct-JDBC commit tests. Every test connects as {@code ledger_app}, drives explicit TXs
+ * to a real commit, and asserts SQLSTATE plus the stable constraint/message name — never an English
+ * server message. No Spring test TX wraps these: an auto-rolled-back TX cannot prove a deferred
+ * commit-time constraint.
  */
 abstract class LedgerIntegrationTest {
 

@@ -281,7 +281,7 @@ class ConcurrencyTest extends LedgerIntegrationTest {
   @Test
   void repeatableReadLosesTheOverdraftRace() throws Exception {
     // Test-only REPEATABLE READ harness in the disposable anomaly DB. Both
-    // transactions read 10,000, both approve 8,000, both commit — the deferred
+    // TXs read 10,000, both approve 8,000, both commit — the deferred
     // trigger cannot save them because each commit-time check runs under a
     // snapshot that predates the rival commit. Final state: −6,000 on a DENY
     // account. Production runs SERIALIZABLE precisely so this schedule aborts.

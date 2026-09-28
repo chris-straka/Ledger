@@ -10,7 +10,7 @@ import java.util.UUID;
 
 /**
  * Record carrying the create-posting transport shape. Currency is deliberately absent from every
- * entry: it is derived from the accounts inside the transaction, never trusted from the client.
+ * entry: it is derived from the accounts inside the TX, never trusted from the client.
  */
 public record CreatePostingRequest(
     @NotBlank @Size(max = 500) String description,

@@ -21,8 +21,8 @@ import org.springframework.stereotype.Repository;
 
 /**
  * Repository running explicit posting SQL. The header insert and the entry batch run inside the
- * caller's SERIALIZABLE transaction; this class never opens one. IDs and recordedAt stay
- * DB-generated, read back through RETURNING.
+ * caller's SERIALIZABLE TX; this class never opens one. IDs and recordedAt stay DB-generated, read
+ * back through RETURNING.
  */
 @Repository
 public class PostingRepository {
@@ -85,7 +85,7 @@ public class PostingRepository {
         batch);
   }
 
-  /** Committed header for an idempotency key, if any. Runs inside or outside transactions alike. */
+  /** Committed header for an idempotency key, if any. Runs inside or outside TXs alike. */
   public Optional<CommittedPosting> findByKey(IdempotencyKey key) {
     return jdbc.sql(
             "SELECT id, request_fingerprint FROM ledger_posting WHERE idempotency_key = :key")

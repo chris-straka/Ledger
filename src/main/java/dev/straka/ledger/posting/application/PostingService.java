@@ -40,18 +40,18 @@ import org.springframework.transaction.support.TransactionTemplate;
 /**
  * Provides the posting use cases (hexagonal architecture): standard postings and reversals. They're
  * idempotent under client-supplied keys. Each attempt runs in a fresh PostgreSQL {@code
- * SERIALIZABLE} transaction created by the {@link TransactionTemplate} below.
+ * SERIALIZABLE} TX created by the {@link TransactionTemplate} below.
  *
  * <p>The template keeps the boundary (BEGIN -> COMMIT) visible: a self-call cannot skip it the way
  * a private self-invoked {@code @Transactional} can. On retry, {@link #runSerializable} starts a
- * new transaction and runs {@link #attemptPost} again from the start — the balance check ({@code
+ * new TX and runs {@link #attemptPost} again from the start — the balance check ({@code
  * rejectOverdraft}) plus the inserts ({@code insertHeader}, {@code insertEntries}) — because an
- * aborted transaction cannot be continued.
+ * aborted TX cannot be continued.
  *
- * <p>Why SERIALIZABLE: the anomaly is overdraft write skew. Two transactions read a 10,000 balance,
- * each approves an 8,000 withdrawal through disjoint row inserts, and both commit at REPEATABLE
- * READ leaving −6,000. At SERIALIZABLE the read/write dependency cannot serialize, so PostgreSQL
- * aborts one attempt with SQLSTATE 40001 and the full retry sees the new balance.
+ * <p>Why SERIALIZABLE: the anomaly is overdraft write skew. Two TXs read a 10,000 balance, each
+ * approves an 8,000 withdrawal through disjoint row inserts, and both commit at REPEATABLE READ
+ * leaving −6,000. At SERIALIZABLE the read/write dependency cannot serialize, so PostgreSQL aborts
+ * one attempt with SQLSTATE 40001 and the full retry sees the new balance.
  */
 @Service
 public class PostingService {
@@ -76,7 +76,7 @@ public class PostingService {
       AttemptRecorder attempts,
       CrashGate crash,
       MeterRegistry meters,
-      PlatformTransactionManager transactions,
+      PlatformTransactionManager txManager,
       Clock clock,
       Sleeper sleeper) {
     this.postings = postings;
@@ -86,7 +86,7 @@ public class PostingService {
     this.meters = meters;
     this.clock = clock;
     this.sleeper = sleeper;
-    this.serializable = new TransactionTemplate(transactions);
+    this.serializable = new TransactionTemplate(txManager);
     this.serializable.setIsolationLevel(TransactionDefinition.ISOLATION_SERIALIZABLE);
   }
 
@@ -103,7 +103,7 @@ public class PostingService {
     Instant cleanEffective = cleanEffectiveAt(effectiveAt);
     List<PostingEntry> entries = toLines(inputs);
 
-    // Currency is derived from accounts inside the transaction, never trusted
+    // Currency is derived from accounts inside the TX, never trusted
     // from the client — so it is not part of the compared body either.
     PostingFingerprint fingerprint =
         PostingFingerprint.v1Standard(cleanDescription, cleanEffective, entries);
@@ -264,7 +264,7 @@ public class PostingService {
             effectiveAt);
 
     postings.insertEntries(id, currency, entries);
-    // Crash window one: header plus entries are inserted, the transaction is still
+    // Crash window one: header plus entries are inserted, the TX is still
     // open. A SIGKILL here must leave neither row behind.
     crash.awaitBeforeCommit();
     // Safe to construct pre-commit: HTTP sees it only after commit succeeds.

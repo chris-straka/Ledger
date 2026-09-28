@@ -10,9 +10,8 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Invariant L7 (raw-SQL half): per-account overdraft policy. The deferred trigger evaluates the
- * projected normal-side balance over the whole ledger inside the committing transaction, so a raw
- * overdraft fails at commit. The application-level SERIALIZABLE race proof lives in
- * ConcurrencyTest.
+ * projected normal-side balance over the whole ledger inside the committing TX, so a raw overdraft
+ * fails at commit. The application-level SERIALIZABLE race proof lives in ConcurrencyTest.
  */
 class OverdraftTest extends LedgerIntegrationTest {
 

@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-/** API handler for postings. Each call runs inside {@link PostingService}'s transaction. */
+/** API handler for postings. Each call runs inside {@link PostingService}'s TX. */
 @RestController
 @RequestMapping("/v1/postings")
 public class PostingController {
