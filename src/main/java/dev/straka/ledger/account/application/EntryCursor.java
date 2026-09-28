@@ -7,7 +7,7 @@ import java.util.UUID;
 
 /**
  * Opaque keyset cursor over the listing order (recordedAt, postingId, entryNumber).
- * Base64url-encoded; anything that fails parsing is rejected as malformed.
+ * Base64url-encoded; anything that fails decoding is rejected as malformed.
  */
 public record EntryCursor(Instant recordedAt, UUID postingId, int entryNumber) {
 
@@ -19,10 +19,11 @@ public record EntryCursor(Instant recordedAt, UUID postingId, int entryNumber) {
         .encodeToString(payload.getBytes(StandardCharsets.UTF_8));
   }
 
-  public static EntryCursor parse(String cursor) {
+  public static EntryCursor decode(String cursor) {
     if (cursor == null || cursor.isBlank()) throw new IllegalArgumentException("Cursor is blank");
 
     String payload;
+
     try {
       payload = new String(Base64.getUrlDecoder().decode(cursor), StandardCharsets.UTF_8);
     } catch (IllegalArgumentException e) {

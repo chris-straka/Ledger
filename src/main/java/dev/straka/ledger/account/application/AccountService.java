@@ -36,12 +36,12 @@ public class AccountService {
     return accounts.requireById(accountId);
   }
 
-  // Keyset pagination: cursor is last row seen and next page resumes
+  // Keyset pagination (cursor is last row seen and next page resumes)
   public EntryPage entries(AccountId accountId, String cursorRaw, String limitRaw) {
     accounts.requireById(accountId); // make sure exists else 404
 
-    // Decodes the cursor; null or blank means the first page.
-    AccountRepository.EntryCursorBean cursorAfter = parseAfterCursor(cursorRaw);
+    // Decode cursor (null/blank means first page)
+    AccountRepository.EntryCursorBean cursorAfter = decodeAfterCursor(cursorRaw);
 
     int limit = parseLimit(limitRaw);
 
@@ -63,12 +63,12 @@ public class AccountService {
     return new EntryPage(List.copyOf(entryPage), nextCursor);
   }
 
-  private static AccountRepository.EntryCursorBean parseAfterCursor(String cursorRaw) {
+  private static AccountRepository.EntryCursorBean decodeAfterCursor(String cursorRaw) {
     if (cursorRaw == null || cursorRaw.isBlank()) return null;
-    EntryCursor parsed = EntryCursor.parse(cursorRaw);
+    EntryCursor decoded = EntryCursor.decode(cursorRaw);
 
     return new AccountRepository.EntryCursorBean(
-        parsed.recordedAt(), parsed.postingId(), parsed.entryNumber());
+        decoded.recordedAt(), decoded.postingId(), decoded.entryNumber());
   }
 
   private static int parseLimit(String limitRaw) {
