@@ -93,6 +93,9 @@ public class AccountRepository {
         WHERE e.account_id = :id
         """; // :id is named param notation
 
+    // Multiple entries can have the same `recorded_at`
+    // (p.recorded_at, e.posting_id) identifies a unique posting but not the entries
+    //
     if (cursorAfter != null)
       sql += " AND (p.recorded_at, e.posting_id, e.entry_number) > (:rec, :pid, :entry)";
 
@@ -109,7 +112,7 @@ public class AccountRepository {
     // rs = ResultSet
     return query
         .query(
-            (rs, _) -> 
+            (rs, n) ->
                 new AccountEntry(
                     (UUID) rs.getObject("posting_id"),
                     rs.getInt("entry_number"),
@@ -132,7 +135,9 @@ public class AccountRepository {
       String description,
       Instant recordedAt) {}
 
-  /** Plain cursor fields for the next page, so this repository never imports the app's cursor type. */
+  /**
+   * Plain cursor fields for the next page, so this repository never imports the app's cursor type.
+   */
   public record EntryCursorBean(Instant recordedAt, UUID postingId, int entryNumber) {}
 
   public Optional<AccountBalance> balanceOf(AccountId id) {
