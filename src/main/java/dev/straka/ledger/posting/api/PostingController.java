@@ -39,12 +39,13 @@ public class PostingController {
   public ResponseEntity<PostingResponse> post(
       @RequestHeader("Idempotency-Key") String key,
       @Valid @RequestBody CreatePostingRequest request) {
+
     List<PostingService.PostingEntryInput> entries =
         request.entries().stream()
             .map(
-                l ->
+                entry ->
                     new PostingService.PostingEntryInput(
-                        l.accountId(), l.side(), l.amountMinorUnits()))
+                        entry.accountId(), entry.side(), entry.amountMinorUnits()))
             .toList();
 
     PostingOutcome outcome =
