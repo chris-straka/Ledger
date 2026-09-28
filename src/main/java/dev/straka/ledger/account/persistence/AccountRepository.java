@@ -80,7 +80,7 @@ public class AccountRepository {
 
   /**
    * Grabs one keyset page of an account's journal entries in immutable order (recordedAt,
-   * postingId, entryNumber), resumed past the cursor.
+   * postingId, entryNumber), starting one row past the cursor.
    */
   public List<AccountEntry> listEntries(AccountId id, EntryCursorBean cursorAfter, int fetch) {
 
@@ -132,7 +132,6 @@ public class AccountRepository {
       String description,
       Instant recordedAt) {}
 
-  /** Cursor fields without importing the transport codec into persistence. */
   public record EntryCursorBean(Instant recordedAt, UUID postingId, int entryNumber) {}
 
   public Optional<AccountBalance> balanceOf(AccountId id) {
