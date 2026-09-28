@@ -15,7 +15,7 @@ public final class SqlStates {
   /** Raised by the deferred ledger triggers. */
   public static final String CHECK_VIOLATION_CODE = "23514";
 
-  /** The SERIALIZABLE retry signal. */
+  /** PG aborted the current TX: a SERIALIZABLE dependency could not serialize. */
   public static final String SERIALIZATION_FAILURE_CODE = "40001";
 
   /** PG throws this when the current TX is aborted due to a deadlock. */
