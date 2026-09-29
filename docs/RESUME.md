@@ -10,7 +10,8 @@ Double-entry ledger (Java 25, Spring Boot, Postgres): every money move
 is an atomic, balanced, idempotent posting; eight invariants, each with
 a failing-without-the-fix test against real Postgres (Testcontainers).
 
-## Bullets
+## Claims
+\
 
 1. **Balance enforced in two layers, not trusted to the app.**
    Postings validate in the domain (BigInteger, no floats) and again in
