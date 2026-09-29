@@ -10,14 +10,11 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Record holding a semantic fingerprint: versioned SHA-256 over a documented canonical tuple, so a
- * retry after a lost HTTP response is recognized as the same request while a different request
- * under one key is a conflict. Covered: algorithm version, operation kind, description, normalized
- * instant, and ordered normalized entries. Excluded: generated IDs, recordedAt, trace data, and
- * transport-only fields. JSON property order is irrelevant; entry order is significant because it
- * becomes the immutable entry_number.
+ * Versioned SHA-256 over a request's semantic content. A retry after a lost response replays the
+ * original posting; a different request under one key is a conflict.
  */
 public record PostingFingerprint(byte[] sha256) {
+
   public PostingFingerprint {
     if (sha256 == null || sha256.length != 32) {
       throw new InvalidPostingException("fingerprint must be 32 bytes");
@@ -26,8 +23,8 @@ public record PostingFingerprint(byte[] sha256) {
   }
 
   /**
-   * Reversal fingerprint over the operation kind, target posting ID, reason, and normalized
-   * instant. Server-derived inverse entries are not client input and stay out of the tuple.
+   * Covers the target posting ID, reason, and effective instant. The inverse entries are
+   * server-derived, not client input, so they stay out.
    */
   public static PostingFingerprint v1Reversal(UUID target, String reason, Instant effectiveAt) {
     try {
@@ -43,6 +40,10 @@ public record PostingFingerprint(byte[] sha256) {
     }
   }
 
+  /**
+   * Covers the description, effective instant, and ordered entries. Entry order is significant: it
+   * becomes the immutable entry_number. Generated IDs, recordedAt, and transport fields stay out.
+   */
   public static PostingFingerprint v1Standard(
       String description, Instant effectiveAt, List<PostingEntry> entries) {
     try {
