@@ -1,22 +1,22 @@
-# RESUME — talking points with proof
+# CLAIMS — guarantees and their proof
 
-Each bullet is a resume-safe claim. The proof column names the test or
-script that backs it, so no bullet outruns the code. Numbers below are
-the actual test parameters, not roundings.
+Each guarantee names the test or script that backs it, so no claim
+outruns the code. Numbers below are the actual test parameters,
+not roundings.
 
-## The one-line pitch
+## The one-line summary
 
 Double-entry ledger (Java 25, Spring Boot, Postgres): every money move
 is an atomic, balanced, idempotent posting; eight invariants, each with
 a failing-without-the-fix test against real Postgres (Testcontainers).
 
-## Talking points
+## Guarantees
 
 1. **Balance enforced in two layers, not trusted to the app.**
    Postings validate in the domain (BigInteger, no floats) and again in
    a deferred Postgres trigger, so raw SQL can't bypass the rule.
    Proof: `PostingBalanceTest` attacks the trigger with raw SQL.
-   Interview angle: why a CHECK can't do this (one row vs. the set).
+   Note: a CHECK can't do this — one row vs. the set.
 
 2. **SERIALIZABLE with a demonstrated reason, not a default.**
    Production postings run SERIALIZABLE to kill the overdraft
@@ -26,8 +26,6 @@ a failing-without-the-fix test against real Postgres (Testcontainers).
    SERIALIZABLE aborts one with 40001 and the loser retries.
    Proof: `ConcurrencyTest` (`repeatableReadLosesTheOverdraftRace`,
    overdraft race ends 201 + 409, final 2000).
-   Note: SERIALIZABLE prevents the skew, it doesn't "order" saves —
-   say *abort-and-retry*, not *out-of-order*.
 
 3. **50-thread exact-sum concurrency proof.**
    Fifty threads hammer one account; the final balance equals the
@@ -70,8 +68,6 @@ a failing-without-the-fix test against real Postgres (Testcontainers).
    Raw JDBC: the tx boundary, deferred triggers, and role separation
    need explicit control an ORM would fight (managed entities,
    cascades). Trade-offs live in `DESIGN.md`.
-   Interview angle: "I bring in a tool for what it gives me, not to
-   disable what it comes with."
 
 10. **Money as integer minor units end to end.**
     `long`/`BigInteger` everywhere; a float in the money path is
@@ -80,7 +76,7 @@ a failing-without-the-fix test against real Postgres (Testcontainers).
     Proof: `PostingDraftTest`, `CurrencyCodeTest`, ArchUnit domain
     boundary (`DomainIsolationTest`).
 
-## What not to claim
+## Out of scope (not claimed)
 
 - No capacity numbers (no load test with published hardware yet).
 - No multi-node story (one Postgres, by design).
