@@ -4,13 +4,20 @@ Paste-ready text is below (under 2000 chars). Picture ideas at the end.
 
 ## Summary
 
-Ledger — a double-entry book of record in Java 25, Spring Boot, and Postgres. Every money move is an atomic posting: a set of debit/credit entries that must sum to zero, enforced twice — in the domain layer (BigInteger math, integer minor units, no floats anywhere) and again by a deferred Postgres trigger, so even raw SQL can't write an unbalanced posting.
+I built a double-entry ledger in Java 25, Spring Boot, and Postgres. It's the book of record for money moves: every move is a "posting," a set of debit/credit entries that must sum to zero, or the whole transaction aborts.
 
-The interesting work was concurrency and correctness under failure. Postings run at SERIALIZABLE isolation, and I can show why: a REPEATABLE READ harness exhibits the overdraft write-skew (two withdrawals both reading the stale balance, landing a no-overdraft account at -6000) that SERIALIZABLE aborts instead. A 50-thread posting storm against one account lands exactly on the arithmetic sum — no lost updates, no hand-managed locks.
+There are essentially two layers enforcing the balance, as far as I set it up.
 
-Idempotency comes from a unique key, never check-then-insert: replays return the original, conflicting bodies get 409, and a 20-way concurrent replay race produces exactly one posting. History is immutable by database enforcement — the app role can't UPDATE or DELETE journal rows, triggers backstop the grants, and corrections are reversal postings, never edits. Crash safety is proven with real SIGKILL tests: kill before commit leaves zero rows, kill after commit replays exactly once. Every test run ends with a conservation audit: all entries sum to zero.
+1. The app validates it first (BigInteger math, integer minor units, no floats anywhere near money).
+2. A deferred Postgres trigger checks it again at commit, so even raw SQL can't sneak in an unbalanced posting.
 
-No ORM (raw JDBC for explicit tx boundaries), no balance column (derived from entries, nothing to drift), tested against real Postgres via Testcontainers.
+The part I liked most was the concurrency story. Postings run at SERIALIZABLE isolation, and I can show exactly why: I wrote a test harness at REPEATABLE READ where two withdrawals both read the same stale balance and both commit, landing a no-overdraft account at -6000. The deferred trigger can't catch it because it reads the same stale snapshot. At SERIALIZABLE, Postgres aborts one of them instead and the loser retries. A 50-thread storm against one account then lands exactly on the arithmetic sum.
+
+Other things in there: idempotency keys (replay returns the original, conflicting bodies get 409), immutable history (the app's DB user can't UPDATE or DELETE anything, so corrections are reversal postings), and crash tests using real SIGKILLs. Every test ends with an audit that all entries sum to zero.
+
+Honest limits: one Postgres by design, no load-test numbers yet, no FX or event streaming. Those are stretch goals, not claims.
+
+https://github.com/chris-straka/Ledger
 
 ## Picture ideas
 
