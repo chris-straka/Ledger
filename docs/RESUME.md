@@ -11,7 +11,6 @@ is an atomic, balanced, idempotent posting; eight invariants, each with
 a failing-without-the-fix test against real Postgres (Testcontainers).
 
 ## Claims
-\
 
 1. **Balance enforced in two layers, not trusted to the app.**
    Postings validate in the domain (BigInteger, no floats) and again in
