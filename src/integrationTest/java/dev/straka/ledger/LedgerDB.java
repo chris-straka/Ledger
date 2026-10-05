@@ -18,6 +18,11 @@ import org.testcontainers.containers.PostgreSQLContainer;
  * used in Compose — bootstrapped exactly like production: a superuser creates the owner/app roles
  * and the ledger DB, Flyway migrates as the owner, and every test connects as the restricted {@code
  * ledger_app} runtime role. Tests never hold owner credentials.
+ *
+ * <p>Without Docker, set {@code LEDGER_TEST_ADMIN_URL} (plus optional {@code
+ * LEDGER_TEST_ADMIN_USER} / {@code LEDGER_TEST_ADMIN_PASSWORD}) to a superuser JDBC URL on a
+ * <em>disposable</em> Postgres 18 cluster. The same bootstrap then runs there instead of in a
+ * container, after dropping any previous ledger databases and roles on that cluster.
  */
 final class LedgerDB {
 
@@ -35,6 +40,9 @@ final class LedgerDB {
           .withUsername("test")
           .withPassword("test");
 
+  /** Superuser JDBC URL of a disposable external cluster; unset means Testcontainers. */
+  private static final String EXTERNAL_ADMIN_URL = System.getenv("LEDGER_TEST_ADMIN_URL");
+
   private static HikariDataSource appPool;
   private static String ledgerUrl;
   private static String anomalyUrl;
@@ -45,11 +53,31 @@ final class LedgerDB {
     if (appPool != null) {
       return;
     }
-    CONTAINER.start();
-    ledgerUrl = CONTAINER.getJdbcUrl().replaceAll("/test(\\?.*)?$", "/" + DB + "$1");
-    anomalyUrl = CONTAINER.getJdbcUrl().replaceAll("/test(\\?.*)?$", "/" + ANOMALY_DB + "$1");
-    try (Connection admin = DriverManager.getConnection(CONTAINER.getJdbcUrl(), "test", "test");
+    String adminUrl;
+    String adminUser;
+    String adminPassword;
+    boolean external = EXTERNAL_ADMIN_URL != null && !EXTERNAL_ADMIN_URL.isBlank();
+    if (external) {
+      adminUrl = EXTERNAL_ADMIN_URL;
+      adminUser = System.getenv().getOrDefault("LEDGER_TEST_ADMIN_USER", "postgres");
+      adminPassword = System.getenv().getOrDefault("LEDGER_TEST_ADMIN_PASSWORD", "");
+    } else {
+      CONTAINER.start();
+      adminUrl = CONTAINER.getJdbcUrl();
+      adminUser = "test";
+      adminPassword = "test";
+    }
+    ledgerUrl = adminUrl.replaceAll("/[^/?]+(\\?.*)?$", "/" + DB + "$1");
+    anomalyUrl = adminUrl.replaceAll("/[^/?]+(\\?.*)?$", "/" + ANOMALY_DB + "$1");
+    try (Connection admin = DriverManager.getConnection(adminUrl, adminUser, adminPassword);
         Statement stmt = admin.createStatement()) {
+      if (external) {
+        // Disposable cluster: start from nothing, exactly like a fresh container.
+        stmt.execute("DROP DATABASE IF EXISTS \"" + DB + "\" WITH (FORCE)");
+        stmt.execute("DROP DATABASE IF EXISTS \"" + ANOMALY_DB + "\" WITH (FORCE)");
+        stmt.execute("DROP ROLE IF EXISTS \"" + APP + "\"");
+        stmt.execute("DROP ROLE IF EXISTS \"" + OWNER + "\"");
+      }
       stmt.execute("CREATE ROLE \"" + OWNER + "\" LOGIN PASSWORD '" + OWNER_PASSWORD + "'");
       stmt.execute("CREATE ROLE \"" + APP + "\" LOGIN PASSWORD '" + APP_PASSWORD + "'");
       stmt.execute("CREATE DATABASE \"" + DB + "\" OWNER \"" + OWNER + "\"");
