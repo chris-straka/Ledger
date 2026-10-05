@@ -78,9 +78,19 @@ a failing-without-the-fix test against real Postgres (Testcontainers).
     Proof: `PostingDraftTest`, `CurrencyCodeTest`, ArchUnit domain
     boundary (`DomainIsolationTest`).
 
+11. **Measured under load, tail explained.**
+    2000 balanced postings from 16 concurrent clients: 655-1207
+    postings/s, p50 1-3 ms, p95 70-117 ms, conservation exactly zero
+    after every run (Apple M4 Mac mini, local Postgres 18.6, 3 runs).
+    The p95 is the SERIALIZABLE retry loop; 1-5 of 2000 exhaust retries
+    and return 503, safe to retry on the same key.
+    Proof: `scripts/load-test.sh 2000 16 spread` against
+    `scripts/run-local.sh`.
+
 ## What isn't claimed
 
-- No capacity numbers (no load test with published hardware yet).
+- No capacity claim: the load numbers are one laptop, loopback Postgres,
+  other work on the machine.
 - No multi-node story (one Postgres, by design).
 - No compliance/regulatory claim of any kind.
 - No FX, no Kafka/outbox — listed stretch goals in `TODO.md`, not done.
