@@ -14,6 +14,7 @@ public record Account(
     AccountType type,
     OverdraftPolicy overdraftPolicy,
     Instant createdAt) {
+
   public Account {
     if (id == null) throw new InvalidAccountException("account id is required");
 

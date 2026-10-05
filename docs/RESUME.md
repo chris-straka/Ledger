@@ -27,7 +27,7 @@ a failing-without-the-fix test against real Postgres (Testcontainers).
    Proof: `ConcurrencyTest` (`repeatableReadLosesTheOverdraftRace`,
    overdraft race ends 201 + 409, final 2000).
    Note: SERIALIZABLE prevents the skew, it doesn't "order" saves —
-   say *abort-and-retry*, not *out-of-order*.
+   say _abort-and-retry_, not _out-of-order_.
 
 3. **50-thread exact-sum concurrency proof.**
    Fifty threads hammer one account; the final balance equals the
@@ -66,12 +66,10 @@ a failing-without-the-fix test against real Postgres (Testcontainers).
    with 409, enforced in app and by deferred constraint.
    Proof: `OverdraftTest`, `PostingApiTest` (overspend 409).
 
-9. **No ORM by decision, with the reason written down.**
+9. **No ORM**
    Raw JDBC: the tx boundary, deferred triggers, and role separation
    need explicit control an ORM would fight (managed entities,
    cascades). Trade-offs live in `DESIGN.md`.
-   Interview angle: "I bring in a tool for what it gives me, not to
-   disable what it comes with."
 
 10. **Money as integer minor units end to end.**
     `long`/`BigInteger` everywhere; a float in the money path is

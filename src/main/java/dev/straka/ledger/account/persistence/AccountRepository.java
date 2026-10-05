@@ -94,8 +94,8 @@ public class AccountRepository {
         """; // :id is named param notation
 
     // Multiple entries can have the same `recorded_at`
-    // (p.recorded_at, e.posting_id) identifies a unique posting but not the entries
-    //
+    // (p.recorded_at, e.posting_id) identifies a posting (meaning all its entries share this)
+    // (p.recorded_at, e.posting_id, e.entry_number) identifies a posting and an entry
     if (cursorAfter != null)
       sql += " AND (p.recorded_at, e.posting_id, e.entry_number) > (:rec, :pid, :entry)";
 

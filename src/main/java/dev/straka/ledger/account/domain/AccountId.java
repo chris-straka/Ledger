@@ -5,9 +5,7 @@ import java.util.UUID;
 /** Record identifying an immutable account. Never reused, never changed. */
 public record AccountId(UUID value) {
   public AccountId {
-    if (value == null) {
-      throw new InvalidAccountException("account id is required");
-    }
+    if (value == null) throw new InvalidAccountException("account id is required");
   }
 
   public static AccountId random() {

@@ -227,9 +227,8 @@ public class PostingService {
         // the application check admitted (e.g. a concurrent overdraft decision), the
         // verdict still surfaces as a business rejection, never a 500.
         RuntimeException translated = translateTriggerRejection(e);
-        if (translated != null) {
-          throw translated;
-        }
+        if (translated != null) throw translated;
+
         throw e;
       }
     }
