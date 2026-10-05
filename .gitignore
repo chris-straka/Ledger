@@ -59,3 +59,6 @@ backups/
 
 # Private interview prep (answers stay on this machine)
 docs/INTERVIEW.md
+
+# One-time LinkedIn paste (removed from the repo in 1023281; stays local)
+docs/LINKEDIN.md
