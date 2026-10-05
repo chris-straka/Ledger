@@ -50,11 +50,11 @@ echo "[ledger] building boot jar"
 ./gradlew -q bootJar
 JAR="$(ls build/libs/*.jar | grep -v plain | head -1)"
 LIB="$(mktemp -d)"
-trap 'rm -rf "$LIB"' EXIT
 (cd "$LIB" && jar xf "$OLDPWD/$JAR" BOOT-INF/lib)
 
 echo "[ledger] migrating $JDBC as $OWNER"
 java -cp "$LIB/BOOT-INF/lib/*" scripts/LocalMigrate.java "$JDBC" "$OWNER" "$OWNER_PW"
+rm -rf "$LIB"
 
 echo "[ledger] serving on http://127.0.0.1:$PORT as $APP"
 exec java -jar "$JAR" \
