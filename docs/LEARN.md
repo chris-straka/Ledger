@@ -220,17 +220,19 @@ A server: `LEDGER_PG_ADMIN_URL=postgres://postgres@localhost:55432/postgres ./sc
 
 ## 6. Connections
 
-- **[PaymentOrchestration](../../PaymentOrchestration)** decides whether a
+These are sibling projects in the same portfolio (not all published yet).
+
+- **PaymentOrchestration** decides whether a
   card payment happened; this ledger records it. The orchestrator is
   deliberately not a ledger, and this repo deliberately has no PSPs.
-- **[cdc-pipe](../../cdc-pipe)** is the relay between them: outbox event
+- **cdc-pipe** is the relay between them: outbox event
   out of the orchestrator, at-least-once delivery, and an idempotent sink.
   Using the event id as this API's `Idempotency-Key` is what makes a
   redelivered event book once.
-- **[recon](../../recon)** reconciles this ledger's postings against the
+- **recon** reconciles this ledger's postings against the
   orchestrator's captures and the PSP's settlement file, and opens a break
   for every disagreement.
-- **[stable-rail](../../stable-rail)** uses the same correction model for
+- **stable-rail** uses the same correction model for
   on-chain money: a USDC deposit is a provisional credit until final, and a
   reorg is an exact-inverse reversal.
 

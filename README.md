@@ -157,8 +157,9 @@ verify`), never a scrape.
 
 ## Connections: the money stack
 
-The ledger is the book of record at the end of a six-repo payment chain.
-It never calls anyone; other systems post to it.
+The ledger is the book of record at the end of a six-repo payment chain
+(sibling projects, not all published yet). It never calls anyone; other
+systems post to it.
 
 ```mermaid
 flowchart LR
