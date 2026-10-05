@@ -24,7 +24,7 @@ jobs:
         # a newly required variable fails here until .env.example names it too.
         run: cp .env.example .env && docker compose config --quiet
       - name: Integrity audit script syntax
-        run: bash -n scripts/verify.sh && bash -n scripts/demo.sh && bash -n scripts/crash-recovery.sh
+        run: for s in scripts/*.sh; do bash -n "$s"; done
 
   crash:
     runs-on: ubuntu-latest

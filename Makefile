@@ -5,7 +5,7 @@ help:
 		| awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-22s\033[0m %s\n", $$1, $$2}'
 
 # .PHONY tells Make these are cmd names, not files on the hard drive.
-.PHONY: help dev jar up upd down clean format check test integration-test crash-test verify demo logs backup restore
+.PHONY: help dev jar up upd down clean format check test integration-test crash-test verify demo logs backup restore run-local load-test
 
 jar: ## build the application jar (Gradle is incremental; safe to re-run)
 	./gradlew build
@@ -50,6 +50,12 @@ backup: ## pg_dump of the dev DB (lands in backups/, gitignored; compose stack m
 restore: ## restore a backup into a disposable DB and audit it (DUMP=backups/ledger-<stamp>.dump)
 	chmod +x scripts/*.sh
 	./scripts/restore.sh "$(DUMP)"
+
+run-local: ## run the API without Docker (LEDGER_PG_ADMIN_URL=postgres://superuser@host:port/postgres)
+	./scripts/run-local.sh
+
+load-test: ## N postings at concurrency C against a running API (make load-test N=2000 C=16)
+	./scripts/load-test.sh $(or $(N),2000) $(or $(C),16)
 
 demo: ## reproducible interviewer walkthrough
 	./scripts/demo.sh
